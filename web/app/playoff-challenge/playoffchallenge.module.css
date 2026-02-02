@@ -1,0 +1,316 @@
+/* app/playoffs/challenge/playoffchallenge.module.css */
+
+.page {
+  background: #ffffff;
+  min-height: 100vh;
+  color: #111827;
+}
+
+.container {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.sub {
+  color: #6b7280;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.select {
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: white;
+  min-width: 180px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 18px;
+}
+
+@media (max-width: 900px){
+  .topbar{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .select{
+    width: 100%;
+  }
+}
+
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+  overflow: hidden;
+}
+
+.cardHeader {
+  padding: 14px 14px 10px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardTitle {
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.smallMuted {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tabActive {
+  border-color: #111827;
+  background: #111827;
+  color: white;
+}
+
+.searchRow {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.search {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: white;
+}
+
+.list {
+  padding: 6px 8px 10px 8px;
+  max-height: 640px;
+  overflow: auto;
+}
+
+.playerRow {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.playerRow:hover {
+  background: #f9fafb;
+}
+
+.pickBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.pickBtnPrimary {
+  background: #111827;
+  color: white;
+  border-color: #111827;
+}
+
+.pName {
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.pMeta {
+  color: #6b7280;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.badge {
+  border-radius: 10px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 900;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  min-width: 40px;
+  text-align: center;
+}
+
+.badgeX2 {
+  border-color: #f59e0b;
+  background: #fff7ed;
+  color: #92400e;
+}
+
+.rightBody {
+  padding: 12px 14px 14px 14px;
+}
+
+.groupTitle {
+  font-weight: 900;
+  font-size: 13px;
+  margin: 10px 0 8px 0;
+}
+
+.slotBox {
+  border: 1px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 10px 10px;
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.removeBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.slotName {
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.slotMeta {
+  color: #6b7280;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.footerCard {
+  margin-top: 18px;
+}
+
+.tableWrap {
+  padding: 10px 14px 14px 14px;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.th {
+  text-align: left;
+  color: #6b7280;
+  font-weight: 800;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 10px 8px;
+  white-space: nowrap;
+}
+
+.td {
+  border-bottom: 1px solid #f3f4f6;
+  padding: 10px 8px;
+  white-space: nowrap;
+}
+
+.headshot{
+  width: 50px;
+  height: 50px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  margin-right: 10px;
+}
+
+.slotPlayer{
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* mobile tab bar (hidden on desktop) */
+.mobileTabs{
+  display: none;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  background: #e5e7eb;
+  padding: 6px;
+  border-radius: 12px;
+  gap: 6px;
+}
+
+.mobileTabBtn{
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.mobileTabBtnActive{
+  background: #3b82f6;
+  color: #fff;
+}
+
+/* default: on desktop BOTH cards visible */
+.hideOnMobile{ display: block; }
+.showOnMobile{ display: block; }
+
+@media (max-width: 900px){
+  .mobileTabs{ display: flex; }
+
+  /* mobile: we switch between pool/team */
+  .hideOnMobile{ display: none; }
+  .showOnMobile{ display: block; }
+
+  /* your grid becomes single column */
+  .grid{ grid-template-columns: 1fr; }
+}
