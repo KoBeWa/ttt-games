@@ -139,13 +139,15 @@ export default async function Page(props: Props) {
   // Entry
   const { data: entry, error: entryErr } = await supabase
     .from("pc_entries")
+    .upsert(
+      { season, user_id: user.id },
+      { onConflict: "season,user_id" }
+    )
     .select("id,season,user_id")
-    .eq("season", season)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (entryErr || !entry) {
-    return <div style={{ padding: 24 }}>Kein Entry gefunden: {entryErr?.message}</div>;
+    .single();
+  
+  if (entryErr) {
+    return <div style={{ padding: 24 }}>Entry Fehler: {entryErr.message}</div>;
   }
 
   // Slots for selected round
