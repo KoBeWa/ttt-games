@@ -29,15 +29,17 @@ export default function OnboardingPage() {
     const clean = username.trim();
     if (clean.length < 3) return setError("Username muss mindestens 3 Zeichen haben.");
 
-    const { error } = await supabase.from("profiles").insert({
-      user_id: user.id,
-      username: clean,
-    });
+    const { error } = await supabase
+      .from("profiles")
+      .update({ username: clean })
+      .eq("user_id", user.id);
 
     if (error) {
-      if (error.message.toLowerCase().includes("duplicate")) {
+      if ((error as any).code === "23505" && error.message.includes("profiles_username_key")) {
         setError("Username ist leider schon vergeben.");
-      } else setError(error.message);
+      } else {
+        setError(error.message);
+      }
       return;
     }
 
