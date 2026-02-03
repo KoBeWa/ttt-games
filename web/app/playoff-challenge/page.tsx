@@ -142,7 +142,7 @@ export default async function Page(props: Props) {
     .select("id,season,user_id")
     .eq("season", season)
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (entryErr || !entry) {
     return <div style={{ padding: 24 }}>Kein Entry gefunden: {entryErr?.message}</div>;
