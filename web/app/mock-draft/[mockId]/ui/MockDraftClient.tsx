@@ -529,7 +529,7 @@ export default function MockDraftClient({
                         className="w-full rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800"
                       >
                         <option value="ALL">All</option>
-                        {["QB", "HB", "RB", "WR", "TE", "T", "G", "C", "ED", "DI", "LB", "CB", "S"].map(
+                        {["QB", "HB", "WR", "TE", "T", "G", "C", "ED", "DI", "LB", "CB", "S"].map(
                           (x) => (
                             <option key={x} value={x}>
                               {x}
