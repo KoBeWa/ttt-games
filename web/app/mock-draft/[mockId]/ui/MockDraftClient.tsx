@@ -602,8 +602,6 @@ export default function MockDraftClient({
               </div>
             </div>
 
-            <div className="mt-2 text-xs text-slate-400">
-              Nächster Step optional: ADP-Spalte + “Show More” Drawer pro Player.
             </div>
           </div>
         </div>
