@@ -17,6 +17,7 @@ export default function NewMockButton({ seasons }: { seasons: number[] }) {
 
     const res = await fetch("/api/mock-draft/create", {
       method: "POST",
+      credentials: "include", // ✅ wichtig
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         season,
@@ -24,12 +25,16 @@ export default function NewMockButton({ seasons }: { seasons: number[] }) {
       }),
     });
 
-    const data = await res.json().catch(() => null);
-
-    setLoading(false);
+    let data: any = null;
+    try {
+      data = await res.json();
+    } catch {
+      // falls HTML/leer zurückkommt
+    }
 
     if (!res.ok) {
-      setMsg(data?.error ?? "Konnte Mock nicht anlegen.");
+      setMsg(data?.error ?? `Fehler (${res.status}): ${res.statusText}`);
+      setLoading(false);
       return;
     }
 
