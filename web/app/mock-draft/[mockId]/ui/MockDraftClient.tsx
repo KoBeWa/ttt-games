@@ -1,5 +1,4 @@
 "use client";
-<div className="bg-red-600 text-white p-2 font-bold">TAILWIND OK</div>
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -31,6 +30,41 @@ type Player = {
 function cn(...xs: Array<string | false | undefined | null>) {
   return xs.filter(Boolean).join(" ");
 }
+
+function TeamLogo({
+  team,
+  size = 24,
+}: {
+  team: PickRow["teams"];
+  size?: number;
+}) {
+  const s = `${size}px`;
+  if (team?.logo_url) {
+    return (
+      <img
+        src={team.logo_url}
+        alt={team.abbr}
+        width={size}
+        height={size}
+        className="rounded bg-white object-contain"
+        style={{ width: s, height: s }}
+        loading="lazy"
+      />
+    );
+  }
+
+  return (
+    <div
+      className="rounded bg-slate-200 flex items-center justify-center text-[10px] font-extrabold text-slate-600"
+      style={{ width: s, height: s }}
+      aria-label={team?.abbr ?? "TEAM"}
+      title={team?.abbr ?? ""}
+    >
+      {team?.abbr ?? "—"}
+    </div>
+  );
+}
+
 
 function initials(name?: string) {
   if (!name) return "";
@@ -198,7 +232,6 @@ export default function MockDraftClient({
 
   return (
     <div className="min-h-screen bg-[#f3f4f6]">
-      <div className="bg-red-600 text-white p-2 font-bold">TAILWIND OK</div>
       {/* top nav */}
       <div className="border-b bg-white">
         <div className="mx-auto max-w-[1400px] px-4 py-3">
@@ -305,15 +338,7 @@ export default function MockDraftClient({
 
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                  {pTeam?.logo_url ? (
-                                    <img
-                                      src={pTeam.logo_url}
-                                      alt={pTeam.abbr}
-                                      className="h-6 w-6 rounded bg-white"
-                                    />
-                                  ) : (
-                                    <div className="h-6 w-6 rounded bg-slate-200" />
-                                  )}
+                                  <TeamLogo team={pTeam} size={40} />
 
                                   <div className="truncate text-sm font-bold text-slate-900">
                                     {picked ? picked.full_name : isActive ? "On the clock" : "Upcoming"}
