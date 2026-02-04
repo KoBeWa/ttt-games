@@ -601,8 +601,6 @@ export default function MockDraftClient({
                 )}
               </div>
             </div>
-
-            </div>
           </div>
         </div>
       </div>
