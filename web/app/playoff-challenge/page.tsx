@@ -209,7 +209,7 @@ export default async function Page(props: Props) {
   
   return (
     <LineupPage
-      key={`${currentRound}-${weekNumber}`}   // ✅ erzwingt Remount bei Round/Week Wechsel
+      key={`${currentRound}-${weekNumber}`}
       season={season}
       round={currentRound}
       weekNumber={weekNumber}
@@ -221,6 +221,7 @@ export default async function Page(props: Props) {
       streaks={streaks ?? []}
       rounds={sortedRounds}
       autoRound={autoRound}
+      isLocked={isLocked}   // ✅ HIER
     />
   );
 }
