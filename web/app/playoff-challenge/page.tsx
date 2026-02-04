@@ -203,6 +203,10 @@ export default async function Page(props: Props) {
     weekNumber,
   });
 
+  const lockAt = aggByWeek.get(weekNumber)?.min ?? null; // erstes Game der Woche
+  const isLocked = lockAt ? now >= lockAt : false;       // now hast du schon oben
+
+  
   return (
     <LineupPage
       key={`${currentRound}-${weekNumber}`}   // ✅ erzwingt Remount bei Round/Week Wechsel
