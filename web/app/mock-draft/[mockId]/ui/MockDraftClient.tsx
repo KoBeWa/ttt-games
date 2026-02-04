@@ -46,7 +46,7 @@ function TeamLogo({
         alt={team.abbr}
         width={size}
         height={size}
-        className="rounded bg-white object-contain"
+        className="rounded object-contain"
         style={{ width: s, height: s }}
         loading="lazy"
       />
@@ -483,7 +483,7 @@ export default function MockDraftClient({
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
                     {team?.logo_url ? (
-                      <img src={team.logo_url} alt={team.abbr} className="h-8 w-8 rounded bg-white" />
+                      <img src={team.logo_url} alt={team.abbr} className="h-8 w-8 rounded object-contain" />
                     ) : (
                       <div className="h-8 w-8 rounded bg-slate-200" />
                     )}
