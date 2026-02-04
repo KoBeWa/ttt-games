@@ -150,6 +150,13 @@ export default async function Page(props: Props) {
     return <div style={{ padding: 24 }}>Entry Fehler: {entryErr.message}</div>;
   }
 
+  // direkt nach: entry wurde gefunden
+  await supabase.rpc("ensure_pc_lineup_slots", {
+    p_entry_id: entry.id,
+    p_season: season,
+    p_round: currentRound,
+  });
+  
   // Slots for selected round
   const { data: slots, error: slotsErr } = await supabase
     .from("pc_lineup_slots")
