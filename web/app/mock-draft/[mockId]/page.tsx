@@ -44,7 +44,7 @@ export default async function MockDraftEditorPage({
     return <div className="p-6">Error loading picks: {picksErr.message}</div>;
   }
 
-  // ✅ Normalize picks (arrays -> object|null)
+  // ✅ Normalize + flatten picks
   const normalizedPicks =
     (picks ?? []).map((p: any) => {
       const teams = Array.isArray(p.teams) ? p.teams[0] ?? null : p.teams ?? null;
@@ -53,7 +53,7 @@ export default async function MockDraftEditorPage({
         ? p.draft_players[0] ?? null
         : p.draft_players ?? null;
 
-      const colleges =
+      const collegeObj =
         draftPlayer?.colleges == null
           ? null
           : Array.isArray(draftPlayer.colleges)
@@ -66,7 +66,8 @@ export default async function MockDraftEditorPage({
         draft_players: draftPlayer
           ? {
               ...draftPlayer,
-              colleges,
+              // ✅ wichtig: so kann der Client das Logo direkt nutzen
+              college_logo_url: collegeObj?.logo_url ?? null,
             }
           : null,
       };
@@ -91,18 +92,29 @@ export default async function MockDraftEditorPage({
     return <div className="p-6">Error loading players: {playersErr.message}</div>;
   }
 
-  // ✅ Normalize players (colleges array -> object|null)
+  // ✅ Normalize + flatten players
   const normalizedPlayers =
-    (players ?? []).map((p: any) => ({
-      ...p,
-      colleges: Array.isArray(p.colleges) ? p.colleges[0] ?? null : p.colleges ?? null,
-    })) ?? [];
+    (players ?? []).map((p: any) => {
+      const collegeObj = Array.isArray(p.colleges) ? p.colleges[0] ?? null : p.colleges ?? null;
+
+      return {
+        id: p.id,
+        full_name: p.full_name,
+        position: p.position,
+        school: p.school,
+        rank_overall: p.rank_overall,
+        rank_pos: p.rank_pos ?? null,
+
+        // ✅ wichtig: das ist das Feld, das dein MockDraftClient nutzt
+        college_logo_url: collegeObj?.logo_url ?? null,
+      };
+    }) ?? [];
 
   return (
     <MockDraftClient
       mock={mock}
       initialPicks={normalizedPicks}
-      teamNeeds={needs ?? []}
+      teamNeeds={needs ?? ([]) }
       initialPlayers={normalizedPlayers}
     />
   );
