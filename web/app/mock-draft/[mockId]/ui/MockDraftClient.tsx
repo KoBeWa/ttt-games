@@ -289,7 +289,7 @@ export default function MockDraftClient({
                       type="button"
                       onClick={() => setLeftTab("YOUR")}
                       className={cn(
-                        "pb-3 text-xs font-extrabold uppercase tracking-wide",
+                        "pb-3 text-[12px] font-semibold uppercase tracking-wide",
                         leftTab === "YOUR" ? "border-b-4 border-blue-600 text-slate-900" : "text-slate-500"
                       )}
                     >
@@ -604,8 +604,9 @@ export default function MockDraftClient({
               </div>
             </div>
           </div>
-         </div> {/* grid wrapper */}
-      </div>   {/* stage wrapper */}
-    </div>     {/* page wrapper */}
-  );
+        </div> {/* grid */}
+      </div>   {/* py-5 */}
+    </div>     {/* stage (max-w) */}
+  </div>       {/* page */}
+ );
 }
