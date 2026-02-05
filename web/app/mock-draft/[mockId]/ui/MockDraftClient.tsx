@@ -231,10 +231,12 @@ export default function MockDraftClient({
     : "On the clock";
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6]">
+    <div className="min-h-screen bg-[#eef0f3] text-slate-900">
+      {/* Center stage like PFF */}
+      <div className="mx-auto max-w-[1180px] px-6">
       {/* top nav */}
-      <div className="border-b bg-white">
-        <div className="mx-auto max-w-[1400px] px-4 py-3">
+      <div className="border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div className="py-3">
           <div className="flex items-center justify-between gap-4">
             <div className="flex flex-col">
               <Link href="/app" className="text-sm font-semibold text-slate-600 hover:text-slate-900">
@@ -263,11 +265,11 @@ export default function MockDraftClient({
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1400px] px-4 py-4">
-        <div className="grid grid-cols-12 gap-4">
+      <div className="py-5">
+        <div className="grid grid-cols-12 gap-5">
           {/* LEFT */}
           <div className="col-span-4">
-            <div className="rounded-sm border border-slate-200 bg-white">
+            <div className="rounded-md border border-slate-200 bg-white shadow-sm">
               {/* tabs like PFF */}
               <div className="border-b bg-white">
                 <div className="flex items-center justify-between px-4 pt-3">
@@ -276,7 +278,7 @@ export default function MockDraftClient({
                       type="button"
                       onClick={() => setLeftTab("FULL")}
                       className={cn(
-                        "pb-3 text-xs font-extrabold uppercase tracking-wide",
+                        "pb-3 text-[12px] font-semibold uppercase tracking-wide",
                         leftTab === "FULL" ? "border-b-4 border-blue-600 text-slate-900" : "text-slate-500"
                       )}
                     >
@@ -471,7 +473,7 @@ export default function MockDraftClient({
 
           {/* RIGHT */}
           <div className="col-span-8">
-            <div className="rounded-sm border border-slate-200 bg-white overflow-hidden">
+            <div className="rounded-md border border-slate-200 bg-white shadow-sm overflow-hidden">
               {/* PFF header */}
               <div className="flex items-center justify-between bg-zinc-700 px-5 py-3 text-white">
                 <div className="text-sm font-extrabold tracking-wide">YOU&apos;RE ON THE CLOCK!</div>
@@ -584,7 +586,7 @@ export default function MockDraftClient({
                           <button
                             type="button"
                             onClick={() => selectPlayer(p)}
-                            className="rounded-sm bg-[#0b3a75] px-10 py-10 text-sm font-extrabold text-white hover:bg-[#0a3163]"
+                            className="rounded-sm bg-[#0b3a75] px-6 py-2 text-sm font-bold text-white hover:bg-[#0a3163]"
                           >
                             Draft
                           </button>
@@ -602,8 +604,8 @@ export default function MockDraftClient({
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+         </div> {/* grid wrapper */}
+      </div>   {/* stage wrapper */}
+    </div>     {/* page wrapper */}
   );
 }
