@@ -245,7 +245,6 @@ export default function LineupPage({
             <div className={styles.title}>Set Your Roster</div>
             <div className={styles.sub}>
               Season {season} · {roundLabel(round)}
-              <span className={styles.smallMuted}> · (Week {weekNumber})</span>
               {round === autoRound ? " · auto" : " · manual"}
               {isLocked ? " · LOCKED" : ""}
             </div>
@@ -258,7 +257,7 @@ export default function LineupPage({
           >
             {rounds.map((r) => (
               <option key={r.round} value={String(r.round)}>
-                {roundLabel(r.round)} {r.is_completed ? "✓" : ""} (Week {r.week_number})
+                {roundLabel(r.round)} {r.is_completed ? "✓" : ""}
               </option>
             ))}
           </select>
