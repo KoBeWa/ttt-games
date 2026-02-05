@@ -294,9 +294,6 @@ export default function MockDraftClient({
                       >
                         YOUR PICKS{" "}
                         {yourUnfilled > 0 && (
-                          <span className="ml-1 rounded-full bg-blue-600 px-2 py-[2px] text-[10px] font-bold text-white">
-                            New
-                          </span>
                         )}
                       </button>
                     </div>
