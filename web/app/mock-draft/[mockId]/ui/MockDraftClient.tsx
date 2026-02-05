@@ -293,8 +293,6 @@ export default function MockDraftClient({
                         )}
                       >
                         YOUR PICKS{" "}
-                        {yourUnfilled > 0 && (
-                        )
                       </button>
                     </div>
                   </div>
