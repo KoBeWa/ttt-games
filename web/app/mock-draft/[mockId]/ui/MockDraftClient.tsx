@@ -584,7 +584,7 @@ export default function MockDraftClient({
                           <button
                             type="button"
                             onClick={() => selectPlayer(p)}
-                            className="rounded-sm bg-[#0b3a75] px-5 py-2 text-sm font-extrabold text-white hover:bg-[#0a3163]"
+                            className="rounded-sm bg-[#0b3a75] px-10 py-10 text-sm font-extrabold text-white hover:bg-[#0a3163]"
                           >
                             Draft
                           </button>
