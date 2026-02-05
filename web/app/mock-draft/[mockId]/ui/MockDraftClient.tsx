@@ -609,7 +609,7 @@ export default function MockDraftClient({
                               </span>
                               {p.rank_pos ? (
                                 <span>
-                                  <span className="font-extrabold text-slate-700">PR</span>{" "}
+                                  <span className="font-extrabold text-slate-700">Position Rank</span>{" "}
                                   {p.rank_pos}
                                 </span>
                               ) : null}
