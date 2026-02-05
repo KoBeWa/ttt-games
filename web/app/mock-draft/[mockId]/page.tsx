@@ -65,7 +65,7 @@ export default async function MockDraftEditorPage({
 
   const { data: players, error: playersErr } = await supabase
     .from("draft_players")
-    .select("id, full_name, position, school, rank_overall, rank_pos")
+    .select("id, full_name, position, school, rank_overall, rank_pos, colleges(logo_url)")
     .order("rank_overall", { ascending: true })
     .limit(300);
 
