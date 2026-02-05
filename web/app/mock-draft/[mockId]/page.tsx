@@ -7,9 +7,9 @@ export default async function MockDraftEditorPage({
 }: {
   params: Promise<{ mockId: string }>;
 }) {
-  const { mockId } = await params; // ✅ wichtig
+  const { mockId } = await params;
 
-  const supabase = await createServerReadClient(); // ✅ await!
+  const supabase = await createServerReadClient();
 
   const { data: userRes } = await supabase.auth.getUser();
   const user = userRes?.user;
@@ -19,7 +19,7 @@ export default async function MockDraftEditorPage({
     .from("mock_drafts")
     .select("id, season, title")
     .eq("id", mockId)
-    .eq("user_id", user.id) 
+    .eq("user_id", user.id)
     .single();
 
   if (mockErr || !mock) {
@@ -44,22 +44,22 @@ export default async function MockDraftEditorPage({
     return <div className="p-6">Error loading picks: {picksErr.message}</div>;
   }
 
-  // ✅ Normalize (arrays -> object|null)
+  // ✅ Normalize picks (arrays -> object|null)
   const normalizedPicks =
     (picks ?? []).map((p: any) => {
       const teams = Array.isArray(p.teams) ? p.teams[0] ?? null : p.teams ?? null;
-  
+
       const draftPlayer = Array.isArray(p.draft_players)
         ? p.draft_players[0] ?? null
         : p.draft_players ?? null;
-  
+
       const colleges =
         draftPlayer?.colleges == null
           ? null
           : Array.isArray(draftPlayer.colleges)
             ? draftPlayer.colleges[0] ?? null
             : draftPlayer.colleges;
-  
+
       return {
         ...p,
         teams,
@@ -71,7 +71,7 @@ export default async function MockDraftEditorPage({
           : null,
       };
     }) ?? [];
-  
+
   const { data: needs, error: needsErr } = await supabase
     .from("team_needs")
     .select("team_id, needs")
@@ -91,12 +91,19 @@ export default async function MockDraftEditorPage({
     return <div className="p-6">Error loading players: {playersErr.message}</div>;
   }
 
+  // ✅ Normalize players (colleges array -> object|null)
+  const normalizedPlayers =
+    (players ?? []).map((p: any) => ({
+      ...p,
+      colleges: Array.isArray(p.colleges) ? p.colleges[0] ?? null : p.colleges ?? null,
+    })) ?? [];
+
   return (
     <MockDraftClient
       mock={mock}
       initialPicks={normalizedPicks}
       teamNeeds={needs ?? []}
-      initialPlayers={players ?? []}
+      initialPlayers={normalizedPlayers}
     />
   );
 }
