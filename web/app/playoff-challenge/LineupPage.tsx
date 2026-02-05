@@ -257,7 +257,6 @@ export default function LineupPage({
           >
             {rounds.map((r) => (
               <option key={r.round} value={String(r.round)}>
-                {roundLabel(r.round)} {r.is_completed ? "✓" : ""}
               </option>
             ))}
           </select>
