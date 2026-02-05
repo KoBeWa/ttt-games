@@ -34,7 +34,7 @@ export default async function MockDraftEditorPage({
       team_id,
       player_id,
       teams:team_id ( abbr, name, logo_url ),
-      draft_players:player_id ( full_name, position, school, rank_overall )
+      draft_players:player_id ( full_name, position, school, rank_overall, colleges(logo_url) )
     `
     )
     .eq("mock_id", mock.id)
@@ -46,14 +46,32 @@ export default async function MockDraftEditorPage({
 
   // ✅ Normalize (arrays -> object|null)
   const normalizedPicks =
-    (picks ?? []).map((p: any) => ({
-      ...p,
-      teams: Array.isArray(p.teams) ? p.teams[0] ?? null : p.teams ?? null,
-      draft_players: Array.isArray(p.draft_players)
+    (picks ?? []).map((p: any) => {
+      const teams = Array.isArray(p.teams) ? p.teams[0] ?? null : p.teams ?? null;
+  
+      const draftPlayer = Array.isArray(p.draft_players)
         ? p.draft_players[0] ?? null
-        : p.draft_players ?? null,
-    })) ?? [];
-
+        : p.draft_players ?? null;
+  
+      const colleges =
+        draftPlayer?.colleges == null
+          ? null
+          : Array.isArray(draftPlayer.colleges)
+            ? draftPlayer.colleges[0] ?? null
+            : draftPlayer.colleges;
+  
+      return {
+        ...p,
+        teams,
+        draft_players: draftPlayer
+          ? {
+              ...draftPlayer,
+              colleges,
+            }
+          : null,
+      };
+    }) ?? [];
+  
   const { data: needs, error: needsErr } = await supabase
     .from("team_needs")
     .select("team_id, needs")
