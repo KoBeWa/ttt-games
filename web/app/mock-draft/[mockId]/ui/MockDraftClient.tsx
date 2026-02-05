@@ -6,13 +6,20 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Mock = { id: string; season: number; title: string };
 
+// NOTE: draft_players hat jetzt colleges(logo_url) im Select → hier typisieren
 type PickRow = {
   pick_no: number;
   team_id: string;
   player_id: string | null;
   teams: { abbr: string; name: string; logo_url: string | null } | null;
   draft_players:
-    | { full_name: string; position: string; school: string; rank_overall: number }
+    | {
+        full_name: string;
+        position: string;
+        school: string;
+        rank_overall: number;
+        colleges?: { logo_url: string | null } | null;
+      }
     | null;
 };
 
@@ -25,6 +32,7 @@ type Player = {
   school: string;
   rank_overall: number;
   rank_pos: number | null;
+  colleges?: { logo_url: string | null } | null;
 };
 
 function cn(...xs: Array<string | false | undefined | null>) {
@@ -33,7 +41,7 @@ function cn(...xs: Array<string | false | undefined | null>) {
 
 function TeamLogo({
   team,
-  size = 24,
+  size = 28,
 }: {
   team: PickRow["teams"];
   size?: number;
@@ -46,21 +54,63 @@ function TeamLogo({
         alt={team.abbr}
         width={size}
         height={size}
-        className="rounded object-contain"
-        style={{ width: s, height: s }}
         loading="lazy"
+        className="h-[28px] w-[28px] rounded-sm object-contain"
+        style={{ width: s, height: s }}
       />
     );
   }
 
   return (
     <div
-      className="flex items-center justify-center rounded bg-slate-200 text-[10px] font-semibold text-slate-700"
+      className="flex items-center justify-center rounded-sm bg-slate-200 text-[10px] font-bold text-slate-700"
       style={{ width: s, height: s }}
       aria-label={team?.abbr ?? "TEAM"}
       title={team?.abbr ?? ""}
     >
       {team?.abbr ?? "—"}
+    </div>
+  );
+}
+
+function CollegeLogo({
+  school,
+  logoUrl,
+  size = 28,
+}: {
+  school: string;
+  logoUrl?: string | null;
+  size?: number;
+}) {
+  const s = `${size}px`;
+  if (logoUrl) {
+    return (
+      <img
+        src={logoUrl}
+        alt={school}
+        width={size}
+        height={size}
+        loading="lazy"
+        className="h-[28px] w-[28px] rounded-sm object-contain"
+        style={{ width: s, height: s }}
+      />
+    );
+  }
+
+  const initials = school
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((x) => x[0]?.toUpperCase())
+    .join("");
+
+  return (
+    <div
+      className="flex items-center justify-center rounded-sm bg-slate-200 text-[10px] font-bold text-slate-700"
+      style={{ width: s, height: s }}
+      title={school}
+    >
+      {initials || "—"}
     </div>
   );
 }
@@ -133,10 +183,7 @@ export default function MockDraftClient({
   }, [initialPlayers, pickedPlayerIds, pos, q]);
 
   const allTeams = useMemo(() => {
-    const map = new Map<
-      string,
-      { id: string; abbr: string; name: string; logo_url: string | null }
-    >();
+    const map = new Map<string, { id: string; abbr: string; name: string; logo_url: string | null }>();
     picks.forEach((p) => {
       if (!map.has(p.team_id)) {
         map.set(p.team_id, {
@@ -151,7 +198,6 @@ export default function MockDraftClient({
   }, [picks]);
 
   const yourTeamPicks = useMemo(() => picks.filter((p) => p.team_id === yourTeamId), [picks, yourTeamId]);
-
   const yourUnfilled = useMemo(() => yourTeamPicks.filter((p) => !p.player_id).length, [yourTeamPicks]);
 
   const remainingPicksForCurrentTeam = useMemo(() => {
@@ -169,6 +215,8 @@ export default function MockDraftClient({
     setMsg(null);
 
     const prev = picks;
+
+    // UI sofort optimistisch updaten (inkl. college logo)
     const next = picks.map((p) =>
       p.pick_no === currentPick
         ? {
@@ -179,10 +227,12 @@ export default function MockDraftClient({
               position: player.position,
               school: player.school,
               rank_overall: player.rank_overall,
+              colleges: player.colleges ?? null,
             },
           }
         : p
     );
+
     setPicks(next);
 
     const { error } = await supabase
@@ -265,7 +315,7 @@ export default function MockDraftClient({
             {/* LEFT */}
             <div className="col-span-4">
               <div className="rounded-md border border-slate-200 bg-white shadow-sm">
-                {/* tabs like PFF */}
+                {/* tabs */}
                 <div className="border-b bg-white">
                   <div className="flex items-center justify-between px-4 pt-3">
                     <div className="flex gap-8">
@@ -292,7 +342,7 @@ export default function MockDraftClient({
                             : "text-slate-500 hover:text-slate-700"
                         )}
                       >
-                        YOUR PICKS{" "}
+                        YOUR PICKS
                       </button>
                     </div>
                   </div>
@@ -336,17 +386,20 @@ export default function MockDraftClient({
 
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2">
-                                    <TeamLogo team={pTeam} size={40} />
-                                    <div className="truncate text-sm font-bold text-slate-900">
-                                      {picked ? picked.full_name : isActive ? "On the clock" : "Upcoming"}
+                                    <TeamLogo team={pTeam} size={36} />
+
+                                    <div className="min-w-0">
+                                      <div className="truncate text-sm font-bold text-slate-900">
+                                        {picked ? picked.full_name : isActive ? "On the clock" : "Upcoming"}
+                                      </div>
+
+                                      {picked ? (
+                                        <div className="mt-1 text-xs font-semibold text-slate-500">
+                                          {picked.position} • {picked.school}
+                                        </div>
+                                      ) : null}
                                     </div>
                                   </div>
-
-                                  {picked ? (
-                                    <div className="mt-1 text-xs font-semibold text-slate-500">
-                                      {picked.position} • {picked.school}
-                                    </div>
-                                  ) : null}
                                 </div>
                               </div>
 
@@ -431,7 +484,9 @@ export default function MockDraftClient({
                                 </div>
 
                                 <div className="min-w-0">
-                                  <div className="truncate text-sm font-bold text-slate-900">{picked ? picked.full_name : "Upcoming"}</div>
+                                  <div className="truncate text-sm font-bold text-slate-900">
+                                    {picked ? picked.full_name : "Upcoming"}
+                                  </div>
                                   <div className="text-xs font-semibold text-slate-500">
                                     {picked ? `${picked.position} • ${picked.school}` : "Upcoming"}
                                   </div>
@@ -465,21 +520,17 @@ export default function MockDraftClient({
             {/* RIGHT */}
             <div className="col-span-8">
               <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
-                {/* PFF header */}
+                {/* header */}
                 <div className="flex items-center justify-between bg-zinc-700 px-5 py-3 text-white">
                   <div className="text-sm font-extrabold tracking-wide">YOU&apos;RE ON THE CLOCK!</div>
                   <div className="text-sm font-extrabold">ROUND 1, PICK {currentPick}</div>
                 </div>
 
-                {/* team header row */}
+                {/* team header */}
                 <div className="border-b bg-[#f3f4f6] px-5 py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      {team?.logo_url ? (
-                        <img src={team.logo_url} alt={team.abbr} className="h-8 w-8 rounded object-contain" />
-                      ) : (
-                        <div className="h-8 w-8 rounded bg-slate-200" />
-                      )}
+                      <TeamLogo team={team ?? null} size={32} />
                       <div>
                         <div className="text-lg font-bold text-slate-900">{team?.name ?? "—"}</div>
                         <div className="text-sm font-semibold text-slate-600">{onClockLabel}</div>
@@ -499,9 +550,11 @@ export default function MockDraftClient({
                     </div>
                   </div>
 
-                  {/* single tab */}
+                  {/* tab */}
                   <div className="mt-3 border-b">
-                    <div className="inline-flex border-b-2 border-blue-600 pb-2 text-sm font-bold text-slate-900">Draft a Player</div>
+                    <div className="inline-flex border-b-2 border-blue-600 pb-2 text-sm font-bold text-slate-900">
+                      Draft a Player
+                    </div>
                   </div>
 
                   {/* filters */}
@@ -543,6 +596,7 @@ export default function MockDraftClient({
                 <div className="max-h-[62vh] overflow-auto">
                   {availablePlayers.map((p) => {
                     const match = currentNeeds.includes(p.position);
+                    const collegeLogoUrl = p.colleges?.logo_url ?? null;
 
                     return (
                       <div key={p.id} className="border-t px-5 py-4 hover:bg-slate-50">
@@ -553,11 +607,22 @@ export default function MockDraftClient({
                             {p.rank_pos ? <div className="text-xs font-semibold text-slate-500">PR {p.rank_pos}</div> : null}
                           </div>
 
+                          {/* PFF-ish: College logo + name */}
                           <div className="col-span-8 min-w-0">
-                            <div className="truncate text-lg font-bold text-slate-900">{p.full_name}</div>
-                            <div className="mt-0.5 text-sm font-semibold text-slate-600">
-                              <span className="font-bold">{p.position}</span> &nbsp; {p.school}
-                              {match ? <span className="ml-2 text-xs font-bold text-emerald-700">Need match</span> : null}
+                            <div className="flex items-center gap-3 min-w-0">
+                              <CollegeLogo school={p.school} logoUrl={collegeLogoUrl} size={28} />
+
+                              <div className="min-w-0">
+                                <div className="truncate text-[15px] font-extrabold text-slate-900">
+                                  {p.full_name}
+                                </div>
+                                <div className="mt-0.5 text-[12px] font-semibold text-slate-600">
+                                  <span className="font-extrabold">{p.position}</span> • {p.school}
+                                  {match ? (
+                                    <span className="ml-2 text-[11px] font-bold text-emerald-700">Need match</span>
+                                  ) : null}
+                                </div>
+                              </div>
                             </div>
                           </div>
 
@@ -565,7 +630,7 @@ export default function MockDraftClient({
                             <button
                               type="button"
                               onClick={() => selectPlayer(p)}
-                              className="rounded bg-[#0b3a75] px-10 py-10 text-sm font-bold text-white hover:bg-[#0a3163]"
+                              className="rounded-sm bg-[#0b3a75] px-6 py-2 text-sm font-bold text-white hover:bg-[#0a3163]"
                             >
                               Draft
                             </button>
@@ -581,9 +646,10 @@ export default function MockDraftClient({
                 </div>
               </div>
             </div>
-          </div> {/* grid */}
-        </div> {/* py-5 */}
-      </div> {/* stage (max-w) */}
-    </div> /* page */
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
+
