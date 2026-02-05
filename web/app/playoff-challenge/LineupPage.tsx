@@ -51,6 +51,17 @@ type Props = {
 
 const POS_TABS: TabPos[] = ["QB", "RB", "WR", "TE", "K", "DEF"];
 
+const ROUND_LABEL: Record<number, string> = {
+  1: "Wild Card",
+  2: "Divisional",
+  3: "Conference Championship",
+  4: "Super Bowl",
+};
+
+function roundLabel(r: number) {
+  return ROUND_LABEL[r] ?? `Round ${r}`;
+}
+
 function posFromSlot(slot: string): TabPos {
   if (slot === "DST1") return "DEF";
   return slot.replace(/[0-9]/g, "") as TabPos;
@@ -233,7 +244,8 @@ export default function LineupPage({
           <div>
             <div className={styles.title}>Set Your Roster</div>
             <div className={styles.sub}>
-              Season {season} · Round {round} · Week {weekNumber}
+              Season {season} · {roundLabel(round)}
+              <span className={styles.smallMuted}> · (Week {weekNumber})</span>
               {round === autoRound ? " · auto" : " · manual"}
               {isLocked ? " · LOCKED" : ""}
             </div>
@@ -246,7 +258,7 @@ export default function LineupPage({
           >
             {rounds.map((r) => (
               <option key={r.round} value={String(r.round)}>
-                Round {r.round} (Week {r.week_number}) {r.is_completed ? "✓" : ""}
+                {roundLabel(r.round)} {r.is_completed ? "✓" : ""} (Week {r.week_number})
               </option>
             ))}
           </select>
@@ -379,7 +391,7 @@ export default function LineupPage({
             }`}
           >
             <div className={styles.cardHeader}>
-              <div className={styles.cardTitle}>My Team – Round {round}</div>
+              <div className={styles.cardTitle}>My Team – {roundLabel(round)}</div>
               <div className={styles.smallMuted}>{saving ? "Saving…" : isLocked ? "Locked" : ""}</div>
             </div>
 
