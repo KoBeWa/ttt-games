@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Mock = { id: string; season: number; title: string };
 
-// NOTE: draft_players hat jetzt colleges(logo_url) im Select → hier typisieren
 type PickRow = {
   pick_no: number;
   team_id: string;
@@ -18,7 +17,8 @@ type PickRow = {
         position: string;
         school: string;
         rank_overall: number;
-        colleges?: { logo_url: string | null } | null;
+        // optional: wenn du es auch in picks joinst
+        college_logo_url?: string | null;
       }
     | null;
 };
@@ -32,7 +32,9 @@ type Player = {
   school: string;
   rank_overall: number;
   rank_pos: number | null;
-  colleges?: { logo_url: string | null } | null;
+
+  // ✅ kommt aus colleges join (page.tsx normalisieren!)
+  college_logo_url?: string | null;
 };
 
 function cn(...xs: Array<string | false | undefined | null>) {
@@ -41,7 +43,7 @@ function cn(...xs: Array<string | false | undefined | null>) {
 
 function TeamLogo({
   team,
-  size = 28,
+  size = 24,
 }: {
   team: PickRow["teams"];
   size?: number;
@@ -54,16 +56,16 @@ function TeamLogo({
         alt={team.abbr}
         width={size}
         height={size}
-        loading="lazy"
-        className="h-[28px] w-[28px] rounded-sm object-contain"
+        className="rounded object-contain"
         style={{ width: s, height: s }}
+        loading="lazy"
       />
     );
   }
 
   return (
     <div
-      className="flex items-center justify-center rounded-sm bg-slate-200 text-[10px] font-bold text-slate-700"
+      className="flex items-center justify-center rounded bg-slate-200 text-[10px] font-semibold text-slate-700"
       style={{ width: s, height: s }}
       aria-label={team?.abbr ?? "TEAM"}
       title={team?.abbr ?? ""}
@@ -73,53 +75,52 @@ function TeamLogo({
   );
 }
 
-function CollegeLogo({
+function initials(name?: string) {
+  if (!name) return "";
+  const parts = name.split(" ").filter(Boolean);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function CollegeMark({
   school,
   logoUrl,
-  size = 28,
+  size = 44,
 }: {
   school: string;
   logoUrl?: string | null;
   size?: number;
 }) {
   const s = `${size}px`;
+
   if (logoUrl) {
     return (
-      <img
-        src={logoUrl}
-        alt={school}
-        width={size}
-        height={size}
-        loading="lazy"
-        className="h-[28px] w-[28px] rounded-sm object-contain"
+      <div
+        className="flex items-center justify-center rounded-full bg-white ring-1 ring-slate-200"
         style={{ width: s, height: s }}
-      />
+      >
+        <img
+          src={logoUrl}
+          alt={school}
+          width={size - 8}
+          height={size - 8}
+          className="h-[calc(100%-10px)] w-[calc(100%-10px)] object-contain"
+          loading="lazy"
+        />
+      </div>
     );
   }
 
-  const initials = school
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((x) => x[0]?.toUpperCase())
-    .join("");
-
   return (
     <div
-      className="flex items-center justify-center rounded-sm bg-slate-200 text-[10px] font-bold text-slate-700"
+      className="flex items-center justify-center rounded-full bg-slate-100 text-sm font-extrabold text-slate-700 ring-1 ring-slate-200"
       style={{ width: s, height: s }}
       title={school}
+      aria-label={school}
     >
-      {initials || "—"}
+      {initials(school)}
     </div>
   );
-}
-
-function initials(name?: string) {
-  if (!name) return "";
-  const parts = name.split(" ").filter(Boolean);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 export default function MockDraftClient({
@@ -197,8 +198,10 @@ export default function MockDraftClient({
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [picks]);
 
-  const yourTeamPicks = useMemo(() => picks.filter((p) => p.team_id === yourTeamId), [picks, yourTeamId]);
-  const yourUnfilled = useMemo(() => yourTeamPicks.filter((p) => !p.player_id).length, [yourTeamPicks]);
+  const yourTeamPicks = useMemo(
+    () => picks.filter((p) => p.team_id === yourTeamId),
+    [picks, yourTeamId]
+  );
 
   const remainingPicksForCurrentTeam = useMemo(() => {
     if (!currentPickRow) return 0;
@@ -216,7 +219,6 @@ export default function MockDraftClient({
 
     const prev = picks;
 
-    // UI sofort optimistisch updaten (inkl. college logo)
     const next = picks.map((p) =>
       p.pick_no === currentPick
         ? {
@@ -227,7 +229,7 @@ export default function MockDraftClient({
               position: player.position,
               school: player.school,
               rank_overall: player.rank_overall,
-              colleges: player.colleges ?? null,
+              college_logo_url: player.college_logo_url ?? null,
             },
           }
         : p
@@ -255,7 +257,9 @@ export default function MockDraftClient({
     setMsg(null);
 
     const prev = picks;
-    const next = picks.map((p) => (p.pick_no === pickNo ? { ...p, player_id: null, draft_players: null } : p));
+    const next = picks.map((p) =>
+      p.pick_no === pickNo ? { ...p, player_id: null, draft_players: null } : p
+    );
     setPicks(next);
 
     const { error } = await supabase
@@ -274,9 +278,9 @@ export default function MockDraftClient({
 
   return (
     <div className="min-h-screen bg-[#eef0f3] text-slate-900">
-      {/* Center stage like PFF */}
-      <div className="mx-auto max-w-[1180px] px-6">
-        {/* top nav */}
+      {/* Stage (centered like PFF) */}
+      <div className="mx-auto max-w-[1180px] px-3 sm:px-6">
+        {/* Top nav (sticky) */}
         <div className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur">
           <div className="py-3">
             <div className="flex items-center justify-between gap-4">
@@ -309,13 +313,13 @@ export default function MockDraftClient({
           </div>
         </div>
 
-        {/* main */}
-        <div className="py-5">
-          <div className="grid grid-cols-12 gap-5">
+        {/* MAIN: mobile = stacked, md+ = 2 columns */}
+        <div className="py-4 sm:py-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-5">
             {/* LEFT */}
-            <div className="col-span-4">
-              <div className="rounded-md border border-slate-200 bg-white shadow-sm">
-                {/* tabs */}
+            <div className="md:col-span-4">
+              <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+                {/* Tabs */}
                 <div className="border-b bg-white">
                   <div className="flex items-center justify-between px-4 pt-3">
                     <div className="flex gap-8">
@@ -348,189 +352,161 @@ export default function MockDraftClient({
                   </div>
                 </div>
 
-                {/* content */}
+                {/* Header line */}
                 {leftTab === "FULL" ? (
-                  <>
-                    <div className="border-b bg-[#e5e7eb] px-4 py-3">
-                      <div className="text-sm font-bold text-slate-800">ROUND 1</div>
-                    </div>
-
-                    <div className="max-h-[78vh] overflow-auto">
-                      {picks.map((p) => {
-                        const isActive = p.pick_no === currentPick;
-                        const needs = needsMap.get(p.team_id) ?? [];
-                        const pTeam = p.teams;
-                        const picked = p.draft_players;
-
-                        return (
-                          <div
-                            key={p.pick_no}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => setCurrentPick(p.pick_no)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") setCurrentPick(p.pick_no);
-                            }}
-                            className={cn(
-                              "border-t px-4 py-3 text-left hover:bg-slate-50 outline-none",
-                              isActive && "bg-white border-l-4 border-l-blue-600"
-                            )}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex items-start gap-3 min-w-0">
-                                <div className="w-12 shrink-0 text-xs font-bold text-slate-500">
-                                  Pick
-                                  <br />
-                                  {p.pick_no}
-                                </div>
-
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <TeamLogo team={pTeam} size={36} />
-
-                                    <div className="min-w-0">
-                                      <div className="truncate text-sm font-bold text-slate-900">
-                                        {picked ? picked.full_name : isActive ? "On the clock" : "Upcoming"}
-                                      </div>
-
-                                      {picked ? (
-                                        <div className="mt-1 text-xs font-semibold text-slate-500">
-                                          {picked.position} • {picked.school}
-                                        </div>
-                                      ) : null}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="text-right">
-                                <div className="text-[11px] font-bold text-slate-500">Needs</div>
-                                <div className="mt-1 text-xs font-semibold text-slate-700">{needs.join(", ")}</div>
-                              </div>
-                            </div>
-
-                            {p.player_id && (
-                              <div className="mt-2 flex justify-end">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    clearPick(p.pick_no);
-                                  }}
-                                  className="text-xs font-semibold text-slate-500 hover:text-slate-900"
-                                >
-                                  Clear
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
+                  <div className="border-b bg-[#e5e7eb] px-4 py-3">
+                    <div className="text-sm font-bold text-slate-800">ROUND 1</div>
+                  </div>
                 ) : (
-                  <>
-                    <div className="border-b bg-[#f3f4f6] px-4 py-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="text-sm font-bold text-slate-800">Your Team&apos;s Picks</div>
-
-                        <select
-                          value={yourTeamId}
-                          onChange={(e) => setYourTeamId(e.target.value)}
-                          className="w-60 rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800"
-                        >
-                          {allTeams.map((t) => (
-                            <option key={t.id} value={t.id}>
-                              {t.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                  <div className="border-b bg-[#f3f4f6] px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-sm font-bold text-slate-800">Your Team&apos;s Picks</div>
+                      <select
+                        value={yourTeamId}
+                        onChange={(e) => setYourTeamId(e.target.value)}
+                        className="w-60 rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800"
+                      >
+                        {allTeams.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
+                  </div>
+                )}
 
-                    <div className="max-h-[78vh] overflow-auto">
-                      {yourTeamPicks.map((p) => {
-                        const isActive = p.pick_no === currentPick;
-                        const picked = p.draft_players;
+                {/* List */}
+                <div className={cn(
+                  // mobile: nicht zu hoch, damit right panel sichtbar bleibt
+                  "overflow-auto",
+                  "max-h-[44vh] md:max-h-[78vh]"
+                )}>
+                  {(leftTab === "FULL" ? picks : yourTeamPicks).map((p) => {
+                    const isActive = p.pick_no === currentPick;
+                    const needs = needsMap.get(p.team_id) ?? [];
+                    const pTeam = p.teams;
+                    const picked = p.draft_players;
 
-                        return (
-                          <div
-                            key={p.pick_no}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => setCurrentPick(p.pick_no)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" || e.key === " ") setCurrentPick(p.pick_no);
-                            }}
-                            className={cn(
-                              "border-t px-4 py-3 hover:bg-slate-50 outline-none",
-                              isActive && "bg-white border-l-4 border-l-blue-600"
-                            )}
-                          >
-                            <div className="grid grid-cols-12 items-center gap-2">
-                              <div className="col-span-2">
-                                <div className="text-xs font-bold text-slate-500">Rd</div>
-                                <div className="text-sm font-bold text-slate-900">1</div>
+                    return (
+                      <div
+                        key={p.pick_no}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setCurrentPick(p.pick_no)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") setCurrentPick(p.pick_no);
+                        }}
+                        className={cn(
+                          "border-t px-4 py-3 text-left hover:bg-slate-50 outline-none",
+                          isActive && "bg-white border-l-4 border-l-blue-600"
+                        )}
+                      >
+                        {leftTab === "FULL" ? (
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3 min-w-0">
+                              <div className="w-12 shrink-0 text-xs font-bold text-slate-500">
+                                Pick
+                                <br />
+                                {p.pick_no}
                               </div>
 
-                              <div className="col-span-2">
-                                <div className="text-xs font-bold text-slate-500">Pick</div>
-                                <div className="text-sm font-bold text-slate-900">{p.pick_no}</div>
-                              </div>
-
-                              <div className="col-span-8 flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">
-                                  {picked ? initials(picked.full_name) : "—"}
-                                </div>
-
-                                <div className="min-w-0">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <TeamLogo team={pTeam} size={34} />
                                   <div className="truncate text-sm font-bold text-slate-900">
-                                    {picked ? picked.full_name : "Upcoming"}
-                                  </div>
-                                  <div className="text-xs font-semibold text-slate-500">
-                                    {picked ? `${picked.position} • ${picked.school}` : "Upcoming"}
+                                    {picked ? picked.full_name : isActive ? "On the clock" : "Upcoming"}
                                   </div>
                                 </div>
+
+                                {picked ? (
+                                  <div className="mt-1 text-xs font-semibold text-slate-500">
+                                    {picked.position} • {picked.school}
+                                  </div>
+                                ) : null}
                               </div>
                             </div>
 
-                            {p.player_id && (
-                              <div className="mt-2 flex justify-end">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    clearPick(p.pick_no);
-                                  }}
-                                  className="text-xs font-semibold text-slate-500 hover:text-slate-900"
-                                >
-                                  Clear
-                                </button>
+                            <div className="text-right">
+                              <div className="text-[11px] font-bold text-slate-500">Needs</div>
+                              <div className="mt-1 text-xs font-semibold text-slate-700">
+                                {needs.join(", ")}
                               </div>
-                            )}
+                            </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
+                        ) : (
+                          <div className="grid grid-cols-12 items-center gap-2">
+                            <div className="col-span-2">
+                              <div className="text-xs font-bold text-slate-500">Rd</div>
+                              <div className="text-sm font-bold text-slate-900">1</div>
+                            </div>
+
+                            <div className="col-span-2">
+                              <div className="text-xs font-bold text-slate-500">Pick</div>
+                              <div className="text-sm font-bold text-slate-900">{p.pick_no}</div>
+                            </div>
+
+                            <div className="col-span-8 flex items-center gap-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-xs font-extrabold text-slate-700 ring-1 ring-slate-200">
+                                {picked ? initials(picked.full_name) : "—"}
+                              </div>
+
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-bold text-slate-900">
+                                  {picked ? picked.full_name : "Upcoming"}
+                                </div>
+                                <div className="text-xs font-semibold text-slate-500">
+                                  {picked ? `${picked.position} • ${picked.school}` : "Upcoming"}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {p.player_id && (
+                          <div className="mt-2 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                clearPick(p.pick_no);
+                              }}
+                              className="text-xs font-semibold text-slate-500 hover:text-slate-900"
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
             {/* RIGHT */}
-            <div className="col-span-8">
+            <div className="md:col-span-8">
               <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
-                {/* header */}
+                {/* PFF-ish header */}
                 <div className="flex items-center justify-between bg-zinc-700 px-5 py-3 text-white">
                   <div className="text-sm font-extrabold tracking-wide">YOU&apos;RE ON THE CLOCK!</div>
                   <div className="text-sm font-extrabold">ROUND 1, PICK {currentPick}</div>
                 </div>
 
-                {/* team header */}
+                {/* Team header row */}
                 <div className="border-b bg-[#f3f4f6] px-5 py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <TeamLogo team={team ?? null} size={32} />
+                      {team?.logo_url ? (
+                        <img
+                          src={team.logo_url}
+                          alt={team.abbr}
+                          className="h-8 w-8 rounded object-contain"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded bg-slate-200" />
+                      )}
                       <div>
                         <div className="text-lg font-bold text-slate-900">{team?.name ?? "—"}</div>
                         <div className="text-sm font-semibold text-slate-600">{onClockLabel}</div>
@@ -550,7 +526,7 @@ export default function MockDraftClient({
                     </div>
                   </div>
 
-                  {/* tab */}
+                  {/* tab label (only Draft a Player) */}
                   <div className="mt-3 border-b">
                     <div className="inline-flex border-b-2 border-blue-600 pb-2 text-sm font-bold text-slate-900">
                       Draft a Player
@@ -561,8 +537,9 @@ export default function MockDraftClient({
                   <div className="mt-4 rounded-sm border border-slate-200 bg-white p-4">
                     <div className="text-sm font-bold text-slate-900">Filter Positions</div>
 
-                    <div className="mt-3 grid grid-cols-12 gap-3">
-                      <div className="col-span-5">
+                    {/* mobile: 1 col, sm+: 2 cols */}
+                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-12">
+                      <div className="sm:col-span-5">
                         <select
                           value={pos}
                           onChange={(e) => setPos(e.target.value)}
@@ -577,7 +554,7 @@ export default function MockDraftClient({
                         </select>
                       </div>
 
-                      <div className="col-span-7">
+                      <div className="sm:col-span-7">
                         <div className="flex items-center rounded-sm border border-slate-300 bg-white px-3 py-2">
                           <span className="mr-2 text-slate-400">🔍</span>
                           <input
@@ -593,44 +570,58 @@ export default function MockDraftClient({
                 </div>
 
                 {/* player list */}
-                <div className="max-h-[62vh] overflow-auto">
+                <div className={cn(
+                  "overflow-auto",
+                  // mobile: eher “PFF-like”, rest bleibt sichtbar
+                  "max-h-[58vh] md:max-h-[62vh]"
+                )}>
                   {availablePlayers.map((p) => {
                     const match = currentNeeds.includes(p.position);
-                    const collegeLogoUrl = p.colleges?.logo_url ?? null;
 
                     return (
                       <div key={p.id} className="border-t px-5 py-4 hover:bg-slate-50">
                         <div className="grid grid-cols-12 items-center gap-3">
-                          <div className="col-span-2">
-                            <div className="text-xs font-bold text-slate-500">Rank</div>
-                            <div className="text-lg font-extrabold text-slate-900">{p.rank_overall}</div>
-                            {p.rank_pos ? <div className="text-xs font-semibold text-slate-500">PR {p.rank_pos}</div> : null}
+                          {/* left: college logo */}
+                          <div className="col-span-2 flex items-center justify-center">
+                            <CollegeMark school={p.school} logoUrl={p.college_logo_url ?? null} size={44} />
                           </div>
 
-                          {/* PFF-ish: College logo + name */}
-                          <div className="col-span-8 min-w-0">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <CollegeLogo school={p.school} logoUrl={collegeLogoUrl} size={28} />
+                          {/* middle: player name/pos/school */}
+                          <div className="col-span-7 min-w-0">
+                            <div className="truncate text-base font-extrabold text-slate-900 sm:text-lg">
+                              {p.full_name}
+                            </div>
+                            <div className="mt-0.5 text-sm font-semibold text-slate-600">
+                              <span className="font-extrabold">{p.position}</span>{" "}
+                              <span className="text-slate-500">•</span> {p.school}
+                              {match ? (
+                                <span className="ml-2 text-xs font-extrabold text-emerald-700">
+                                  Need match
+                                </span>
+                              ) : null}
+                            </div>
 
-                              <div className="min-w-0">
-                                <div className="truncate text-[15px] font-extrabold text-slate-900">
-                                  {p.full_name}
-                                </div>
-                                <div className="mt-0.5 text-[12px] font-semibold text-slate-600">
-                                  <span className="font-extrabold">{p.position}</span> • {p.school}
-                                  {match ? (
-                                    <span className="ml-2 text-[11px] font-bold text-emerald-700">Need match</span>
-                                  ) : null}
-                                </div>
-                              </div>
+                            {/* PFF-ish “Rank / PR” line */}
+                            <div className="mt-2 flex items-center gap-4 text-xs font-semibold text-slate-500">
+                              <span>
+                                <span className="font-extrabold text-slate-700">Rank</span>{" "}
+                                {p.rank_overall}
+                              </span>
+                              {p.rank_pos ? (
+                                <span>
+                                  <span className="font-extrabold text-slate-700">PR</span>{" "}
+                                  {p.rank_pos}
+                                </span>
+                              ) : null}
                             </div>
                           </div>
 
-                          <div className="col-span-2 flex justify-end">
+                          {/* right: action */}
+                          <div className="col-span-3 flex justify-end">
                             <button
                               type="button"
                               onClick={() => selectPlayer(p)}
-                              className="rounded-sm bg-[#0b3a75] px-6 py-2 text-sm font-bold text-white hover:bg-[#0a3163]"
+                              className="rounded bg-[#0b3a75] px-6 py-2 text-sm font-extrabold text-white hover:bg-[#0a3163]"
                             >
                               Draft
                             </button>
@@ -641,14 +632,16 @@ export default function MockDraftClient({
                   })}
 
                   {availablePlayers.length === 0 && (
-                    <div className="p-6 text-sm font-semibold text-slate-600">No players match your filter.</div>
+                    <div className="p-6 text-sm font-semibold text-slate-600">
+                      No players match your filter.
+                    </div>
                   )}
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </div>{/* grid */}
+        </div>{/* main */}
+      </div>{/* stage */}
     </div>
   );
 }
