@@ -685,7 +685,7 @@ export default function MockDraftClient({
                                 <div className="truncate text-lg font-bold text-slate-900">{p.full_name}</div>
                                 <div className="mt-0.5 text-sm font-semibold text-slate-600">
                                   <span className="font-bold">{p.position}</span> &nbsp; {p.school}
-                                  {match ? <span className="ml-2 text-xs font-bold text-emerald-700">Need match</span> : null}
+                                  {match ? <span className="ml-2 text-xs font-bold text-emerald-700">NEED</span> : null}
                                 </div>
                               </div>
                             </div>
