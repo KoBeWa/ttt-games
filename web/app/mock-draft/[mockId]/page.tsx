@@ -26,6 +26,17 @@ export default async function MockDraftEditorPage({
     return <div className="p-6">Mock nicht gefunden oder kein Zugriff.</div>;
   }
 
+  const { data: realPicks } = await supabase
+    .from("real_draft_picks")
+    .select("player_id, pick_no")
+    .eq("season", mock.season);
+
+  const realPickMap = new Map<string, number>();
+  (realPicks ?? []).forEach((r: any) => {
+    realPickMap.set(r.player_id, r.pick_no);
+  });
+
+  
   const { data: picks, error: picksErr } = await supabase
     .from("mock_picks")
     .select(
@@ -96,7 +107,7 @@ export default async function MockDraftEditorPage({
   const normalizedPlayers =
     (players ?? []).map((p: any) => {
       const collegeObj = Array.isArray(p.colleges) ? p.colleges[0] ?? null : p.colleges ?? null;
-
+  
       return {
         id: p.id,
         full_name: p.full_name,
@@ -104,9 +115,9 @@ export default async function MockDraftEditorPage({
         school: p.school,
         rank_overall: p.rank_overall,
         rank_pos: p.rank_pos ?? null,
-
-        // ✅ wichtig: das ist das Feld, das dein MockDraftClient nutzt
         college_logo_url: collegeObj?.logo_url ?? null,
+  
+        real_pick_no: realPickMap.get(p.id) ?? null, // 👈 hier
       };
     }) ?? [];
 
