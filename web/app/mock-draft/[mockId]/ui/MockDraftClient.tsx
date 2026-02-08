@@ -457,10 +457,6 @@ export default function MockDraftClient({
                                   {picked ? (
                                     <div className="mt-1 text-xs font-semibold text-slate-500">
                                       {picked.position} • {picked.school}
-                                      {pl?.real_pick_no ? (
-                                      ) : (
-                                        <span className="ml-2 text-[11px] font-bold text-slate-400">Real: —</span>
-                                      )}
                                     </div>
                                   ) : null}
                                 </div>
@@ -691,14 +687,6 @@ export default function MockDraftClient({
                                   <span className="font-bold">{p.position}</span> &nbsp; {p.school}
                                   {match ? <span className="ml-2 text-xs font-bold text-emerald-700">Need match</span> : null}
                                 </div>
-
-                                {p.real_pick_no ? (
-                                  <div className="mt-0.5 text-xs font-semibold text-slate-500">
-                                    Real pick: <span className="font-bold text-slate-700">#{p.real_pick_no}</span>
-                                  </div>
-                                ) : (
-                                  <div className="mt-0.5 text-xs font-semibold text-slate-400">Real pick: —</div>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -897,11 +885,6 @@ export default function MockDraftClient({
                         </div>
                         <div className="text-xs font-semibold text-slate-500">
                           Rank <span className="font-bold text-slate-700">{p.rank_overall}</span>
-                          {p.real_pick_no ? (
-                            <span className="ml-2">Real #{p.real_pick_no}</span>
-                          ) : (
-                            <span className="ml-2 text-slate-400">Real —</span>
-                          )}
                         </div>
                       </div>
                     </div>
