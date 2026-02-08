@@ -32,9 +32,9 @@ type Player = {
   school: string;
   rank_overall: number;
   rank_pos: number | null;
+  college_logo_url: string | null;
 
-  // ✅ kommt aus colleges join (page.tsx normalisieren!)
-  college_logo_url?: string | null;
+  real_pick_no?: number | null; // 👈 neu
 };
 
 function cn(...xs: Array<string | false | undefined | null>) {
