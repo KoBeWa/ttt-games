@@ -458,9 +458,6 @@ export default function MockDraftClient({
                                     <div className="mt-1 text-xs font-semibold text-slate-500">
                                       {picked.position} • {picked.school}
                                       {pl?.real_pick_no ? (
-                                        <span className="ml-2 text-[11px] font-bold text-slate-600">
-                                          Real: #{pl.real_pick_no} ({meta.label})
-                                        </span>
                                       ) : (
                                         <span className="ml-2 text-[11px] font-bold text-slate-400">Real: —</span>
                                       )}
