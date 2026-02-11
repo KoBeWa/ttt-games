@@ -22,7 +22,7 @@ type SlotRow = {
   slot: string;
   player_id: string | null;
   team_id: string | null;
-  fantasy_points?: number | null;
+  points?: number | null;
   is_completed?: boolean; // kommt aus view, kannst du ignorieren
 };
 
@@ -435,9 +435,9 @@ export default function LineupPage({
                                 </div>
                     
                                 {/* ✅ Punkte nur wenn Runde abgeschlossen */}
-                                {isCompleted && typeof (s as any).fantasy_points === "number" && (
+                                {isCompleted && typeof (s as any).points === "number" && (
                                   <div className={styles.slotPoints}>
-                                    {Number((s as any).fantasy_points).toFixed(2)} pts
+                                    {Number((s as any).points).toFixed(2)} pts
                                   </div>
                                 )}
                               </div>
@@ -450,9 +450,9 @@ export default function LineupPage({
                               <div className={styles.slotMeta}>{t ? "DST" : s.slot}</div>
                     
                               {/* ✅ DST Punkte nur wenn Runde abgeschlossen */}
-                              {isCompleted && typeof (s as any).fantasy_points === "number" && (
+                              {isCompleted && typeof (s as any).points === "number" && (
                                 <div className={styles.slotPoints}>
-                                  {Number((s as any).fantasy_points).toFixed(2)} pts
+                                  {Number((s as any).points).toFixed(2)} pts
                                 </div>
                               )}
                             </div>
