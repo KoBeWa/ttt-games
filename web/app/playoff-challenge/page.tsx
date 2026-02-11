@@ -157,15 +157,17 @@ export default async function Page(props: Props) {
     p_round: currentRound,
   });
   
-  // Slots for selected round
   const { data: slots, error: slotsErr } = await supabase
-    .from("pc_lineup_slots")
-    .select("slot,player_id,team_id")
+    .from("v_pc_lineup_slot_points")
+    .select("slot,player_id,team_id,fantasy_points,is_completed")
     .eq("entry_id", entry.id)
     .eq("season", season)
     .eq("round", currentRound);
-
+  
   if (slotsErr) return <div style={{ padding: 24 }}>Slots Fehler: {slotsErr.message}</div>;
+  
+  // ob die Runde abgeschlossen ist (für UI)
+  const isCompleted = (slots?.[0]?.is_completed ?? false) as boolean;
 
   // Pools for selected week
   const { data: players, error: playersErr } = await supabase
