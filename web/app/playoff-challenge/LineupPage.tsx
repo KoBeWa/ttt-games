@@ -217,8 +217,6 @@ export default function LineupPage({
 
   const filledCount = (pos: TabPos) =>
     myTeamByPos[pos].filter((s) => (pos === "DEF" ? !!s.team_id : !!s.player_id)).length;
-
-  const isCompleted = (rounds.find((r) => r.round === round)?.is_completed ?? false);
   
   function setRound(nextRound: number) {
     const params = new URLSearchParams(sp.toString());
