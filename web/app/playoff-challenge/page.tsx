@@ -159,7 +159,7 @@ export default async function Page(props: Props) {
   
   const { data: slots, error: slotsErr } = await supabase
     .from("v_pc_lineup_slot_points")
-    .select("slot,player_id,team_id,fantasy_points,is_completed")
+    .select("slot,player_id,team_id,points,is_completed")
     .eq("entry_id", entry.id)
     .eq("season", season)
     .eq("round", currentRound);
