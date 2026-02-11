@@ -217,6 +217,7 @@ export default async function Page(props: Props) {
       weekNumber={weekNumber}
       entryId={entry.id}
       slots={slots ?? []}
+      isCompleted={isCompleted}
       players={players ?? []}
       teams={teams ?? []}
       standings={standings ?? []}
