@@ -218,6 +218,8 @@ export default function LineupPage({
   const filledCount = (pos: TabPos) =>
     myTeamByPos[pos].filter((s) => (pos === "DEF" ? !!s.team_id : !!s.player_id)).length;
 
+  const isCompleted = (rounds.find((r) => r.round === round)?.is_completed ?? false);
+  
   function setRound(nextRound: number) {
     const params = new URLSearchParams(sp.toString());
     params.set("round", String(nextRound));
@@ -423,43 +425,45 @@ export default function LineupPage({
                         >
                           ×
                         </button>
-
-                        <div>
+                    
+                        <div className={styles.slotMain}>
                           {p ? (
                             <div className={styles.slotPlayer}>
                               <PlayerHeadshot p={p} />
-                              <div>
+                              <div className={styles.slotText}>
                                 <div className={styles.slotName}>{p.display_name}</div>
                                 <div className={styles.slotMeta}>
                                   {p.latest_team} · {p.position}
                                 </div>
+                    
+                                {/* ✅ Punkte nur wenn Runde abgeschlossen */}
+                                {isCompleted && typeof (s as any).fantasy_points === "number" && (
+                                  <div className={styles.slotPoints}>
+                                    {Number((s as any).fantasy_points).toFixed(2)} pts
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ) : (
-                            <div>
+                            <div className={styles.slotText}>
                               <div className={styles.slotName}>
                                 {t ? `${t.team_abbr} Defense` : "empty"}
                               </div>
                               <div className={styles.slotMeta}>{t ? "DST" : s.slot}</div>
-                            </div>
-                          )}
-                          
-                          {/* ✅ HIER PUNKTE ANZEIGEN */}
-                          {isCompleted && typeof s.fantasy_points === "number" && (
-                            <div className={styles.slotPoints}>
-                              {Number(s.fantasy_points).toFixed(2)} pts
-                            </div>
-                          )}
-                            <div>
-                              <div className={styles.slotName}>
-                                {t ? `${t.team_abbr} Defense` : "empty"}
-                              </div>
-                              <div className={styles.slotMeta}>{t ? "DST" : s.slot}</div>
+                    
+                              {/* ✅ DST Punkte nur wenn Runde abgeschlossen */}
+                              {isCompleted && typeof (s as any).fantasy_points === "number" && (
+                                <div className={styles.slotPoints}>
+                                  {Number((s as any).fantasy_points).toFixed(2)} pts
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
-
-                        <div className={`${styles.badge} ${mult >= 2 ? styles.badgeX2 : ""}`}>x{mult}</div>
+                    
+                        <div className={`${styles.badge} ${mult >= 2 ? styles.badgeX2 : ""}`}>
+                          x{mult}
+                        </div>
                       </div>
                     );
                   })}
