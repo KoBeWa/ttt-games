@@ -22,6 +22,8 @@ type SlotRow = {
   slot: string;
   player_id: string | null;
   team_id: string | null;
+  fantasy_points?: number | null;
+  is_completed?: boolean; // kommt aus view, kannst du ignorieren
 };
 
 type StandingRow = { user_name: string; total_points: number };
@@ -47,6 +49,7 @@ type Props = {
   autoRound: number;
   // optional, wenn du es später aus page.tsx reinreichst
   isLocked?: boolean;
+  isCompleted?: boolean;
 };
 
 const POS_TABS: TabPos[] = ["QB", "RB", "WR", "TE", "K", "DEF"];
@@ -95,6 +98,7 @@ export default function LineupPage({
   rounds,
   autoRound,
   isLocked = false,
+  isCompleted = false,
 }: Props) {
   const supabase = createSupabaseBrowserClient();
   const router = useRouter();
@@ -432,6 +436,20 @@ export default function LineupPage({
                               </div>
                             </div>
                           ) : (
+                            <div>
+                              <div className={styles.slotName}>
+                                {t ? `${t.team_abbr} Defense` : "empty"}
+                              </div>
+                              <div className={styles.slotMeta}>{t ? "DST" : s.slot}</div>
+                            </div>
+                          )}
+                          
+                          {/* ✅ HIER PUNKTE ANZEIGEN */}
+                          {isCompleted && typeof s.fantasy_points === "number" && (
+                            <div className={styles.slotPoints}>
+                              {Number(s.fantasy_points).toFixed(2)} pts
+                            </div>
+                          )}
                             <div>
                               <div className={styles.slotName}>
                                 {t ? `${t.team_abbr} Defense` : "empty"}
