@@ -180,3 +180,40 @@
     grid-template-columns: 1fr;
   }
 }
+
+.projectionWrap {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 16px;
+  background: #fff;
+}
+
+.projectionWrap h2 {
+  margin: 0 0 10px;
+}
+
+.projectionGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.projectionCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.projectionCard h3 {
+  margin: 0 0 8px;
+}
+
+.projectionMatch {
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
