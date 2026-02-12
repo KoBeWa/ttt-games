@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function NewMockButton({ seasons }: { seasons: number[] }) {
+export default function NewMockButton({
+  seasons,
+  canCreate,
+}: {
+  seasons: number[];
+  canCreate: boolean;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [season, setSeason] = useState<number>(seasons?.[0] ?? 2026);
@@ -25,7 +31,7 @@ export default function NewMockButton({ seasons }: { seasons: number[] }) {
       }),
     });
 
-    let data: any = null;
+    let data: { id?: string; error?: string } | null = null;
     try {
       data = await res.json();
     } catch {
@@ -47,7 +53,8 @@ export default function NewMockButton({ seasons }: { seasons: number[] }) {
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="rounded-xl border bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50"
+        disabled={!canCreate}
+        className="rounded-xl border bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
       >
         New Mock
       </button>
@@ -86,11 +93,17 @@ export default function NewMockButton({ seasons }: { seasons: number[] }) {
 
           <button
             onClick={createMock}
-            disabled={loading || seasons.length === 0}
+            disabled={loading || seasons.length === 0 || !canCreate}
             className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             {loading ? "Creating..." : "Create"}
           </button>
+
+          {!canCreate && (
+            <div className="mt-2 text-xs text-slate-500">
+              Pro User ist nur ein Mock Draft erlaubt.
+            </div>
+          )}
 
           {seasons.length === 0 && (
             <div className="mt-2 text-xs text-slate-500">
