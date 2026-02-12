@@ -18,18 +18,37 @@ export async function POST(req: Request) {
     }
 
     // --- payload ---
-    let body: any = null;
+    let body: unknown = null;
     try {
       body = await req.json();
     } catch {
       return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
     }
 
-    const season = Number(body?.season);
-    const title = String(body?.title ?? "").trim() || `Mock Draft ${season}`;
+    const payload = (body ?? {}) as { season?: number | string; title?: string };
+    const season = Number(payload.season);
+    const title = String(payload.title ?? "").trim() || `Mock Draft ${season}`;
 
     if (!Number.isFinite(season) || season < 2000 || season > 2100) {
       return NextResponse.json({ error: "Invalid season." }, { status: 400 });
+    }
+
+    // exactly one mock draft per user
+    const { data: existingMock, error: existingErr } = await supabase
+      .from("mock_drafts")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existingErr) {
+      return NextResponse.json({ error: existingErr.message }, { status: 500 });
+    }
+
+    if (existingMock?.id) {
+      return NextResponse.json(
+        { error: "Du hast bereits einen Mock Draft erstellt." },
+        { status: 409 }
+      );
     }
 
     // --- ensure draft order exists (round 1) ---
@@ -51,7 +70,7 @@ export async function POST(req: Request) {
     }
 
     // sanity: unique pick_no
-    const pickNos = slots.map((s: any) => Number(s.pick_no));
+    const pickNos = slots.map((s: { pick_no: number | string }) => Number(s.pick_no));
     if (new Set(pickNos).size !== pickNos.length) {
       return NextResponse.json(
         { error: "draft_slots hat doppelte pick_no (season/round)." },
@@ -78,7 +97,7 @@ export async function POST(req: Request) {
     }
 
     // --- seed mock_picks ---
-    const pickRows = slots.map((s: any) => ({
+    const pickRows = slots.map((s: { pick_no: number | string; team_id: string }) => ({
       mock_id: mock.id,
       pick_no: Number(s.pick_no),
       team_id: s.team_id,
@@ -97,9 +116,10 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ id: mock.id }, { status: 200 });
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Unexpected server error.";
     return NextResponse.json(
-      { error: e?.message ?? "Unexpected server error." },
+      { error: message },
       { status: 500 }
     );
   }
