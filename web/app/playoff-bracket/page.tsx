@@ -9,7 +9,7 @@ import styles from "./playoffbracket.module.css";
 type Conference = "AFC" | "NFC";
 type RoundCode = "WC" | "DIV" | "CONF" | "SB";
 
-type Team = { id: string; name: string; abbr: string };
+type Team = { id: string; name: string; abbr: string; logo_url?: string | null };
 
 type SeedRow = {
   season: number;
@@ -122,7 +122,7 @@ export default function PlayoffBracketPage() {
 
       const { data: seedData, error: seedErr } = await supabase
         .from("playoff_seeds")
-        .select("season,conference,seed,team_id,teams:team_id(id,name,abbr)")
+        .select("season,conference,seed,team_id,teams:team_id(id,name,abbr,logo_url)")
         .eq("season", SEASON)
         .order("conference", { ascending: true })
         .order("seed", { ascending: true });
@@ -133,7 +133,7 @@ export default function PlayoffBracketPage() {
         // Fallback for older schema naming used in previous iterations
         const { data: legacySeedData, error: legacySeedErr } = await supabase
           .from("playoff_team_seeds")
-          .select("season,conference,seed,team_id,teams:team_id(id,name,abbr)")
+          .select("season,conference,seed,team_id,teams:team_id(id,name,abbr,logo_url)")
           .eq("season", SEASON)
           .order("conference", { ascending: true })
           .order("seed", { ascending: true });
@@ -150,7 +150,7 @@ export default function PlayoffBracketPage() {
       const { data: gameData, error: gameErr } = await supabase
         .from("playoff_games")
         .select(
-          "id,season,round,conference,start_time,status,winner_team_id,home_seed,away_seed,home_team_id,away_team_id,home:home_team_id(id,name,abbr),away:away_team_id(id,name,abbr)"
+          "id,season,round,conference,start_time,status,winner_team_id,home_seed,away_seed,home_team_id,away_team_id,home:home_team_id(id,name,abbr,logo_url),away:away_team_id(id,name,abbr,logo_url)"
         )
         .eq("season", SEASON)
         .order("round", { ascending: true })
@@ -324,13 +324,21 @@ export default function PlayoffBracketPage() {
     return { byRound, total: Object.values(byRound).reduce((sum, v) => sum + v, 0) };
   }, [games, picks]);
 
+  const wildcardLockAt = useMemo(() => {
+    const wcGames = games.filter((g) => g.round === "WC");
+    if (!wcGames.length) return null;
+    const minStart = Math.min(...wcGames.map((g) => new Date(g.start_time).getTime()));
+    return new Date(minStart);
+  }, [games]);
+
+  const isBracketLocked = wildcardLockAt ? new Date() >= wildcardLockAt : false;
+
   async function setPick(slot: Slot, teamId: string) {
     setError(null);
 
     if (!uid) return setError("Nicht eingeloggt.");
 
-    const kickoff = new Date(slot.game.start_time);
-    if (kickoff <= new Date()) return setError("Dieses Spiel ist gelockt (Kickoff vorbei).");
+    if (isBracketLocked) return setError("Bracket ist gelockt: Wild-Card-Runde hat begonnen.");
 
     if (!slot.home || !slot.away) {
       return setError("Dieses Matchup ist noch nicht vollständig bestimmt.");
@@ -354,33 +362,46 @@ export default function PlayoffBracketPage() {
 
   const renderSlot = (slot: Slot) => {
     const picked = picks[slot.game.id];
-    const locked = new Date(slot.game.start_time) <= new Date();
+    const isGameFinal = isFinal(slot.game.status, slot.game.winner_team_id);
+    const isPush = isCancelled(slot.game.status);
+
+    const selectedIsWin =
+      isGameFinal && !isPush && picked != null && slot.game.winner_team_id != null && picked === slot.game.winner_team_id;
+    const selectedIsLoss =
+      isGameFinal && !isPush && picked != null && slot.game.winner_team_id != null && picked !== slot.game.winner_team_id;
+
+    const headerBadgeClass = isBracketLocked ? styles.loss : styles.pending;
+    const headerBadgeLabel = isBracketLocked ? "Bracket locked" : "Open";
 
     return (
       <div className={styles.card}>
         <div className={styles.cardTop}>
           <span>{new Date(slot.game.start_time).toLocaleString("de-DE")}</span>
-          <span className={locked ? styles.loss : styles.pending}>{locked ? "Locked" : "Open"}</span>
+          <span className={headerBadgeClass}>{headerBadgeLabel}</span>
         </div>
 
         <button
-          className={`${styles.teamButton} ${picked === slot.home?.id ? styles.teamPicked : ""}`}
-          disabled={locked || !slot.home || !slot.away}
+          className={`${styles.teamButton} ${picked === slot.home?.id ? styles.teamPicked : ""} ${
+            picked === slot.home?.id && selectedIsWin ? styles.teamWin : ""
+          } ${picked === slot.home?.id && selectedIsLoss ? styles.teamLoss : ""}`}
+          disabled={isBracketLocked || !slot.home || !slot.away}
           onClick={() => slot.home && setPick(slot, slot.home.id)}
         >
-          <span>{slot.home?.abbr ?? "TBD"}</span>
+          {slot.home?.logo_url ? <img className={styles.teamLogo} src={slot.home.logo_url} alt={slot.home.abbr} /> : <span>🏈</span>}
           <span>{slot.home?.name ?? "TBD"}</span>
-          <strong></strong>
+          <strong>{slot.home?.abbr ?? ""}</strong>
         </button>
 
         <button
-          className={`${styles.teamButton} ${picked === slot.away?.id ? styles.teamPicked : ""}`}
-          disabled={locked || !slot.home || !slot.away}
+          className={`${styles.teamButton} ${picked === slot.away?.id ? styles.teamPicked : ""} ${
+            picked === slot.away?.id && selectedIsWin ? styles.teamWin : ""
+          } ${picked === slot.away?.id && selectedIsLoss ? styles.teamLoss : ""}`}
+          disabled={isBracketLocked || !slot.home || !slot.away}
           onClick={() => slot.away && setPick(slot, slot.away.id)}
         >
-          <span>{slot.away?.abbr ?? "TBD"}</span>
+          {slot.away?.logo_url ? <img className={styles.teamLogo} src={slot.away.logo_url} alt={slot.away.abbr} /> : <span>🏈</span>}
           <span>{slot.away?.name ?? "TBD"}</span>
-          <strong></strong>
+          <strong>{slot.away?.abbr ?? ""}</strong>
         </button>
       </div>
     );
@@ -396,6 +417,14 @@ export default function PlayoffBracketPage() {
       <p className={styles.subtitle}>
         Initial siehst du nur Wildcard + Byes. Divisional/Conference/Super Bowl füllen sich dynamisch aus deinen Picks (NFL Re-Seeding).
       </p>
+
+      {wildcardLockAt && (
+        <p className={isBracketLocked ? styles.locked : styles.unlocked}>
+          {isBracketLocked
+            ? `🔒 Bracket gelockt seit ${wildcardLockAt.toLocaleString("de-DE")}`
+            : `🟢 Bracket offen bis ${wildcardLockAt.toLocaleString("de-DE")}`}
+        </p>
+      )}
 
       {error && <p className={styles.error}>Fehler: {error}</p>}
       {!loading && seeds.length === 0 && (
@@ -435,7 +464,7 @@ export default function PlayoffBracketPage() {
                   <div className={styles.cardTop}>
                     <span>First-Round Bye</span>
                   </div>
-                  <div>{byes[0]?.teams ? `${byes[0].teams.abbr} ${byes[0].teams.name}` : "TBD"}</div>
+                  <div className={styles.byeTeam}>{byes[0]?.teams?.logo_url ? <img className={styles.teamLogo} src={byes[0].teams.logo_url} alt={byes[0].teams.abbr} /> : <span>🏈</span>}{byes[0]?.teams ? `${byes[0].teams.abbr} ${byes[0].teams.name}` : "TBD"}</div>
                 </div>
 
                 <p className={styles.roundHint}>Divisional</p>
