@@ -44,6 +44,12 @@ export default function NewMockButton({
       return;
     }
 
+    if (!data?.id) {
+      setMsg("Mock konnte nicht erstellt werden. Bitte erneut versuchen.");
+      setLoading(false);
+      return;
+    }
+
     setOpen(false);
     router.push(`/mock-draft/${data.id}`);
     router.refresh();
