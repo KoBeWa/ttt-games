@@ -97,25 +97,20 @@ export default async function MockDraftsPage() {
 
   const mockIds = (allMocks ?? []).map((m: { id: string }) => m.id);
 
-  let mockPicks: Array<{ mock_id: string; pick_no: number; player_id: string | null }> = [];
-  if (mockIds.length > 0) {
-    const { data, error: mockPicksErr } = await supabase
-      .from("mock_picks")
-      .select("mock_id, pick_no, player_id")
-      .in("mock_id", mockIds);
+  const { data: mockPicks, error: mockPicksErr } = await supabase
+    .from("mock_picks")
+    .select("mock_id, pick_no, player_id")
+    .in("mock_id", mockIds.length ? mockIds : ["__none__"]);
 
-    if (mockPicksErr) {
-      return <div className="p-6">Error loading leaderboard picks: {mockPicksErr.message}</div>;
-    }
-
-    mockPicks = (data ?? []) as Array<{ mock_id: string; pick_no: number; player_id: string | null }>;
+  if (mockPicksErr) {
+    return <div className="p-6">Error loading leaderboard picks: {mockPicksErr.message}</div>;
   }
 
   const pointsByMock = new Map<string, number>();
 
   (allMocks ?? []).forEach((m: { id: string }) => pointsByMock.set(m.id, 0));
 
-  mockPicks.forEach((p: { mock_id: string; pick_no: number; player_id: string | null }) => {
+  (mockPicks ?? []).forEach((p: { mock_id: string; pick_no: number; player_id: string | null }) => {
     if (!p.player_id) return;
     const mock = (allMocks ?? []).find((m: { id: string }) => m.id === p.mock_id);
     if (!mock) return;
