@@ -373,11 +373,25 @@ export default function PlayoffBracketPage() {
     const headerBadgeClass = isBracketLocked ? styles.loss : styles.pending;
     const headerBadgeLabel = isBracketLocked ? "Bracket locked" : "Open";
 
+    const actualWinner = slot.game.winner_team_id ? teamsById.get(slot.game.winner_team_id) ?? null : null;
+
     return (
       <div className={styles.card}>
         <div className={styles.cardTop}>
           <span>{new Date(slot.game.start_time).toLocaleString("de-DE")}</span>
           <span className={headerBadgeClass}>{headerBadgeLabel}</span>
+        </div>
+
+        <div className={styles.realWinnerRow}>
+          <span className={styles.realWinnerLabel}>Real winner:</span>
+          {actualWinner ? (
+            <span className={styles.realWinnerValue}>
+              {actualWinner.logo_url ? <img className={styles.teamLogo} src={actualWinner.logo_url} alt={actualWinner.abbr} /> : <span>🏈</span>}
+              {actualWinner.abbr} {actualWinner.name}
+            </span>
+          ) : (
+            <span className={styles.pending}>TBD</span>
+          )}
         </div>
 
         <button
