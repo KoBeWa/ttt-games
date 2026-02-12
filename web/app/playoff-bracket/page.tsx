@@ -19,6 +19,14 @@ type SeedRow = {
   teams: Team | null;
 };
 
+type LegacySeedRow = {
+  season: number;
+  conference: Conference;
+  seed: number;
+  team_id: string;
+  teams: Team | null;
+};
+
 type PlayoffGameRow = {
   id: string;
   season: number;
@@ -110,6 +118,8 @@ export default function PlayoffBracketPage() {
 
       if (!prof?.username) return router.push("/onboarding");
 
+      let loadedSeeds: SeedRow[] = [];
+
       const { data: seedData, error: seedErr } = await supabase
         .from("playoff_seeds")
         .select("season,conference,seed,team_id,teams:team_id(id,name,abbr)")
@@ -117,8 +127,25 @@ export default function PlayoffBracketPage() {
         .order("conference", { ascending: true })
         .order("seed", { ascending: true });
 
-      if (seedErr) return setError(seedErr.message), setLoading(false);
-      setSeeds((seedData ?? []) as unknown as SeedRow[]);
+      if (!seedErr && (seedData ?? []).length > 0) {
+        loadedSeeds = (seedData ?? []) as unknown as SeedRow[];
+      } else {
+        // Fallback for older schema naming used in previous iterations
+        const { data: legacySeedData, error: legacySeedErr } = await supabase
+          .from("playoff_team_seeds")
+          .select("season,conference,seed,team_id,teams:team_id(id,name,abbr)")
+          .eq("season", SEASON)
+          .order("conference", { ascending: true })
+          .order("seed", { ascending: true });
+
+        if (legacySeedErr) {
+          return setError(seedErr?.message ?? legacySeedErr.message), setLoading(false);
+        }
+
+        loadedSeeds = (legacySeedData ?? []) as unknown as LegacySeedRow[];
+      }
+
+      setSeeds(loadedSeeds);
 
       const { data: gameData, error: gameErr } = await supabase
         .from("playoff_games")
@@ -371,6 +398,11 @@ export default function PlayoffBracketPage() {
       </p>
 
       {error && <p className={styles.error}>Fehler: {error}</p>}
+      {!loading && seeds.length === 0 && (
+        <p className={styles.error}>
+          Keine Seeds gefunden für Season {SEASON}. Prüfe, ob Daten in <code>playoff_seeds</code> oder <code>playoff_team_seeds</code> für diese Season vorhanden sind.
+        </p>
+      )}
 
       <section className={styles.scoreCard}>
         <h2>Dein Score</h2>
