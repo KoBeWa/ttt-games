@@ -387,7 +387,7 @@ export default function PlayoffBracketPage() {
           {actualWinner ? (
             <span className={styles.realWinnerValue}>
               {actualWinner.logo_url ? <img className={styles.teamLogo} src={actualWinner.logo_url} alt={actualWinner.abbr} /> : <span>🏈</span>}
-              {actualWinner.abbr} {actualWinner.name}
+              {actualWinner.name}
             </span>
           ) : (
             <span className={styles.pending}>TBD</span>
