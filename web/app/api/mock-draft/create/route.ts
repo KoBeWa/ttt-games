@@ -26,6 +26,7 @@ export async function POST(req: Request) {
       return jsonError(userErr?.message ?? "Not authenticated.", 401);
     }
 
+    // --- payload ---
     let body: unknown = null;
     try {
       body = await req.json();
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
       return jsonError("Invalid JSON body.", 400);
     }
 
-    const payload = (body ?? {}) as CreateMockPayload;
+    const payload = (body ?? {}) as { season?: number | string; title?: string };
     const season = Number(payload.season);
     const title = String(payload.title ?? "").trim() || `Mock Draft ${season}`;
 
@@ -52,6 +53,25 @@ export async function POST(req: Request) {
       return jsonError("Du hast bereits einen Mock Draft erstellt.", 409);
     }
 
+    // exactly one mock draft per user
+    const { data: existingMock, error: existingErr } = await supabase
+      .from("mock_drafts")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existingErr) {
+      return NextResponse.json({ error: existingErr.message }, { status: 500 });
+    }
+
+    if (existingMock?.id) {
+      return NextResponse.json(
+        { error: "Du hast bereits einen Mock Draft erstellt." },
+        { status: 409 }
+      );
+    }
+
+    // --- ensure draft order exists (round 1) ---
     const { data: slots, error: slotsErr } = await supabase
       .from("draft_slots")
       .select("pick_no, team_id")
@@ -67,7 +87,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const pickNos = slots.map((s: DraftSlot) => Number(s.pick_no));
+    // sanity: unique pick_no
+    const pickNos = slots.map((s: { pick_no: number | string }) => Number(s.pick_no));
     if (new Set(pickNos).size !== pickNos.length) {
       return jsonError("draft_slots hat doppelte pick_no (season/round).", 400);
     }
@@ -82,7 +103,8 @@ export async function POST(req: Request) {
       return jsonError(mockErr?.message ?? "Failed to create mock.", 500);
     }
 
-    const pickRows = slots.map((s: DraftSlot) => ({
+    // --- seed mock_picks ---
+    const pickRows = slots.map((s: { pick_no: number | string; team_id: string }) => ({
       mock_id: mock.id,
       pick_no: Number(s.pick_no),
       team_id: s.team_id,
@@ -98,6 +120,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ id: mock.id }, { status: 200 });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unexpected server error.";
-    return jsonError(message, 500);
+    return NextResponse.json(
+      { error: message },
+      { status: 500 }
+    );
   }
 }
