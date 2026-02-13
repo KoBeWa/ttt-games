@@ -23,7 +23,7 @@ export default function NewMockButton({
 
     const res = await fetch("/api/mock-draft/create", {
       method: "POST",
-      credentials: "include", // ✅ wichtig
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         season,
@@ -35,7 +35,7 @@ export default function NewMockButton({
     try {
       data = await res.json();
     } catch {
-      // falls HTML/leer zurückkommt
+      // empty/non-json response
     }
 
     if (!res.ok) {
@@ -56,7 +56,7 @@ export default function NewMockButton({
   }
 
   return (
-    <div className="relative">
+    <div className="relative w-full sm:w-auto">
       <button
         onClick={() => setOpen((v) => !v)}
         disabled={!canCreate}
@@ -115,8 +115,56 @@ export default function NewMockButton({
             <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
               Keine draft_slots gefunden.
             </div>
-          )}
-        </div>
+
+            <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">
+              Season
+            </label>
+            <select
+              value={season}
+              onChange={(e) => setSeason(Number(e.target.value))}
+              className="mb-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              disabled={seasons.length === 0}
+            >
+              {seasons.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+
+            <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">
+              Title
+            </label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={`Mock Draft ${season}`}
+              className="mb-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+            />
+
+            {msg && <div className="mb-2 text-xs text-red-600 dark:text-red-400">{msg}</div>}
+
+            <button
+              onClick={createMock}
+              disabled={loading || seasons.length === 0 || !canCreate}
+              className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900"
+            >
+              {loading ? "Creating..." : "Create"}
+            </button>
+
+            {!canCreate && (
+              <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Pro User ist nur ein Mock Draft erlaubt.
+              </div>
+            )}
+
+            {seasons.length === 0 && (
+              <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Keine draft_slots gefunden.
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
