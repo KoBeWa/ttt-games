@@ -17,7 +17,8 @@ type PickRow = {
         position: string;
         school: string;
         rank_overall: number;
-        colleges?: { logo_url: string | null } | null;
+        college_logo_url?: string | null;
+        colleges?: { logo_url: string | null } | Array<{ logo_url: string | null }> | null;
       }
     | null;
 };
