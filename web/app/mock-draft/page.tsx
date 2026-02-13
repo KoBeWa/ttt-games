@@ -177,33 +177,33 @@ export default async function MockDraftsPage() {
         ))}
       </div>
 
-      <section className="rounded-xl border bg-white p-4">
+      <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
         <h2 className="text-lg font-semibold">Ranking</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
           Alle User mit einem Mock Draft, sortiert nach Punkten.
         </p>
 
         {leaderboard.length === 0 ? (
-          <div className="mt-4 text-sm text-slate-500">Noch keine Einträge vorhanden.</div>
+          <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">Noch keine Einträge vorhanden.</div>
         ) : (
           <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b bg-slate-50 text-slate-700">
+            <table className="min-w-full text-left text-[13px] leading-5 sm:text-sm">
+              <thead className="border-b border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                 <tr>
-                  <th className="px-3 py-2 font-semibold">#</th>
-                  <th className="px-3 py-2 font-semibold">User</th>
-                  <th className="px-3 py-2 font-semibold">Mock</th>
-                  <th className="px-3 py-2 font-semibold">Season</th>
-                  <th className="px-3 py-2 font-semibold">Punkte</th>
+                  <th className="px-3 py-2.5 font-semibold">#</th>
+                  <th className="px-3 py-2.5 font-semibold">User</th>
+                  <th className="px-3 py-2.5 font-semibold">Mock</th>
+                  <th className="px-3 py-2.5 font-semibold">Season</th>
+                  <th className="px-3 py-2.5 font-semibold">Punkte</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="text-slate-800 dark:text-slate-200">
                 {leaderboard.map((row, idx) => (
-                  <tr key={row.mockId} className="border-b last:border-b-0">
-                    <td className="px-3 py-2">{idx + 1}</td>
-                    <td className="px-3 py-2 font-medium text-slate-900">{row.username}</td>
-                    <td className="px-3 py-2">{row.title}</td>
-                    <td className="px-3 py-2">{row.season}</td>
+                  <tr key={row.mockId} className="border-b border-slate-200 last:border-b-0 dark:border-slate-700">
+                    <td className="px-3 py-2.5">{idx + 1}</td>
+                    <td className="px-3 py-2 font-medium text-slate-900 dark:text-slate-100">{row.username}</td>
+                    <td className="px-3 py-2.5">{row.title}</td>
+                    <td className="px-3 py-2.5">{row.season}</td>
                     <td className="px-3 py-2 font-semibold">{row.points}</td>
                   </tr>
                 ))}
