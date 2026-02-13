@@ -136,10 +136,10 @@ export default async function MockDraftsPage() {
     .sort((a, b) => b.points - a.points || a.username.localeCompare(b.username));
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4 p-6 text-slate-900 dark:text-slate-100">
       <Link
         href="/app"
-        className="text-sm font-semibold text-slate-600 hover:text-slate-900"
+        className="text-sm font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
       >
         ← Dashboard
       </Link>
@@ -155,13 +155,13 @@ export default async function MockDraftsPage() {
       )}
 
       {seasons.length === 0 && (
-        <div className="rounded-xl border p-4 text-sm">
+        <div className="rounded-xl border border-slate-300 p-4 text-sm dark:border-slate-700">
           Keine draft_slots gefunden. Erst Round-1 Order für die Season seeden.
         </div>
       )}
 
       {(!mocks || mocks.length === 0) && (
-        <div className="rounded-xl border p-4 text-sm">Noch kein Mock vorhanden.</div>
+        <div className="rounded-xl border border-slate-300 p-4 text-sm dark:border-slate-700">Noch kein Mock vorhanden.</div>
       )}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -169,10 +169,10 @@ export default async function MockDraftsPage() {
           <Link
             key={m.id}
             href={`/mock-draft/${m.id}`}
-            className="rounded-xl border bg-white p-4 hover:bg-slate-50"
+            className="rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
           >
             <div className="text-lg font-semibold">{m.title}</div>
-            <div className="text-sm opacity-70">Season {m.season}</div>
+            <div className="text-sm text-slate-600 dark:text-slate-400">Season {m.season}</div>
           </Link>
         ))}
       </div>

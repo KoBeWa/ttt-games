@@ -66,16 +66,16 @@ export default function NewMockButton({
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 rounded-xl border bg-white p-3 shadow-lg z-50">
-          <div className="text-sm font-semibold mb-2">Create new mock</div>
+        <div className="absolute right-0 z-50 mt-2 w-80 rounded-xl border border-slate-200 bg-white p-3 text-slate-900 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+          <div className="mb-2 text-sm font-semibold">Create new mock</div>
 
-          <label className="block text-xs font-semibold text-slate-600 mb-1">
+          <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">
             Season
           </label>
           <select
             value={season}
             onChange={(e) => setSeason(Number(e.target.value))}
-            className="w-full rounded-lg border px-3 py-2 text-sm mb-3"
+            className="mb-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             disabled={seasons.length === 0}
           >
             {seasons.map((s) => (
@@ -85,17 +85,17 @@ export default function NewMockButton({
             ))}
           </select>
 
-          <label className="block text-xs font-semibold text-slate-600 mb-1">
+          <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">
             Title
           </label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={`Mock Draft ${season}`}
-            className="w-full rounded-lg border px-3 py-2 text-sm mb-3"
+            className="mb-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
 
-          {msg && <div className="text-xs text-red-600 mb-2">{msg}</div>}
+          {msg && <div className="mb-2 text-xs text-red-600 dark:text-red-400">{msg}</div>}
 
           <button
             onClick={createMock}
@@ -112,7 +112,7 @@ export default function NewMockButton({
           )}
 
           {seasons.length === 0 && (
-            <div className="mt-2 text-xs text-slate-500">
+            <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
               Keine draft_slots gefunden.
             </div>
           )}
