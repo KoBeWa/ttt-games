@@ -136,7 +136,7 @@ export default async function MockDraftsPage() {
     .sort((a, b) => b.points - a.points || a.username.localeCompare(b.username));
 
   return (
-    <div className="space-y-4 p-6 text-slate-900">
+    <div className="space-y-4 p-6 text-slate-900 dark:text-slate-100">
       <Link
         href="/app"
         className="text-sm font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
@@ -149,7 +149,7 @@ export default async function MockDraftsPage() {
       </div>
 
       {!canCreateMock && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           Du hast bereits einen Mock Draft erstellt. Pro User ist nur ein Mock Draft erlaubt.
         </div>
       )}
@@ -177,18 +177,18 @@ export default async function MockDraftsPage() {
         ))}
       </div>
 
-      <section className="rounded-xl border border-slate-300 bg-white p-4 text-slate-900">
+      <section className="rounded-xl border bg-white p-4">
         <h2 className="text-lg font-semibold">Ranking</h2>
-        <p className="mt-1 text-sm text-slate-700">
+        <p className="mt-1 text-sm text-slate-600">
           Alle User mit einem Mock Draft, sortiert nach Punkten.
         </p>
 
         {leaderboard.length === 0 ? (
-          <div className="mt-4 text-sm text-slate-600">Noch keine Einträge vorhanden.</div>
+          <div className="mt-4 text-sm text-slate-500">Noch keine Einträge vorhanden.</div>
         ) : (
           <div className="mt-4 overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-slate-300 bg-slate-100 text-slate-800">
+              <thead className="border-b bg-slate-50 text-slate-700">
                 <tr>
                   <th className="px-3 py-2 font-semibold">#</th>
                   <th className="px-3 py-2 font-semibold">User</th>
@@ -199,12 +199,12 @@ export default async function MockDraftsPage() {
               </thead>
               <tbody>
                 {leaderboard.map((row, idx) => (
-                  <tr key={row.mockId} className="border-b border-slate-300 last:border-b-0">
+                  <tr key={row.mockId} className="border-b last:border-b-0">
                     <td className="px-3 py-2">{idx + 1}</td>
                     <td className="px-3 py-2 font-medium text-slate-900">{row.username}</td>
-                    <td className="px-3 py-2 text-slate-800">{row.title}</td>
-                    <td className="px-3 py-2 text-slate-800">{row.season}</td>
-                    <td className="px-3 py-2 font-semibold text-slate-900">{row.points}</td>
+                    <td className="px-3 py-2">{row.title}</td>
+                    <td className="px-3 py-2">{row.season}</td>
+                    <td className="px-3 py-2 font-semibold">{row.points}</td>
                   </tr>
                 ))}
               </tbody>
