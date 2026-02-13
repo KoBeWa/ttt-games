@@ -160,11 +160,13 @@ export default function MockDraftClient({
   initialPicks,
   teamNeeds,
   initialPlayers,
+  picksLockAtIso,
 }: {
   mock: Mock;
   initialPicks: PickRow[];
   teamNeeds: NeedRow[];
   initialPlayers: Player[];
+  picksLockAtIso: string;
 }) {
   const supabase = createSupabaseBrowserClient();
 
@@ -177,6 +179,13 @@ export default function MockDraftClient({
   const [q, setQ] = useState("");
   const [pos, setPos] = useState<string>("ALL");
   const [msg, setMsg] = useState<string | null>(null);
+
+  const [nowTs] = useState<number>(() => Date.now());
+  const picksLocked = nowTs >= Date.parse(picksLockAtIso);
+
+  const picksLockedLabel = new Date(picksLockAtIso).toLocaleString("de-DE", {
+    timeZone: "Europe/Berlin",
+  });
 
   const [leftTab, setLeftTab] = useState<"FULL" | "YOUR">("FULL");
   const [yourTeamId, setYourTeamId] = useState<string>(() => initialPicks[0]?.team_id ?? "");
@@ -261,6 +270,11 @@ export default function MockDraftClient({
 
   async function selectPlayer(player: Player) {
     if (!currentPickRow) return;
+    if (picksLocked) {
+      setMsg(`Picks sind seit ${picksLockedLabel} gesperrt.`);
+      return;
+    }
+
     setMsg(null);
 
     const prev = picks;
@@ -298,6 +312,11 @@ export default function MockDraftClient({
   }
 
   async function clearPick(pickNo: number) {
+     if (picksLocked) {
+      setMsg(`Picks sind seit ${picksLockedLabel} gesperrt.`);
+      return;
+    }
+
     setMsg(null);
 
     const prev = picks;
@@ -341,7 +360,8 @@ export default function MockDraftClient({
                 <button
                   type="button"
                   onClick={nextUnfilled}
-                  className="rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  disabled={picksLocked}
+                  className="rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Next unfilled
                 </button>
@@ -353,6 +373,12 @@ export default function MockDraftClient({
                 )}
               </div>
             </div>
+
+            {picksLocked && (
+              <div className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+                Picks sind gesperrt (Deadline: {picksLockedLabel}).
+              </div>
+            )}
 
             {/* mobile score */}
             <div className="mt-3 sm:hidden">
@@ -476,7 +502,9 @@ export default function MockDraftClient({
                                     e.stopPropagation();
                                     clearPick(p.pick_no);
                                   }}
-                                  className="text-xs font-semibold text-slate-500 hover:text-slate-900"
+                                  disabled={picksLocked}
+                                  
+                                  className="text-xs font-semibold text-slate-500 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   Clear
                                 </button>
@@ -573,7 +601,9 @@ export default function MockDraftClient({
                                     e.stopPropagation();
                                     clearPick(p.pick_no);
                                   }}
-                                  className="text-xs font-semibold text-slate-500 hover:text-slate-900"
+                                  disabled={picksLocked}
+                                  
+                                  className="text-xs font-semibold text-slate-500 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   Clear
                                 </button>
@@ -695,7 +725,8 @@ export default function MockDraftClient({
                             <button
                               type="button"
                               onClick={() => selectPlayer(p)}
-                              className="rounded-sm bg-[#0b3a75] px-6 py-2 text-sm font-bold text-white hover:bg-[#0a3163]"
+                              disabled={picksLocked}
+                              className="rounded-sm bg-[#0b3a75] px-6 py-2 text-sm font-bold text-white hover:bg-[#0a3163] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               Draft
                             </button>
@@ -892,7 +923,8 @@ export default function MockDraftClient({
                     <button
                       type="button"
                       onClick={() => selectPlayer(p)}
-                      className="shrink-0 rounded-sm bg-[#0b3a75] px-4 py-2 text-sm font-bold text-white hover:bg-[#0a3163]"
+                      disabled={picksLocked}
+                      className="shrink-0 rounded-sm bg-[#0b3a75] px-4 py-2 text-sm font-bold text-white hover:bg-[#0a3163] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Draft
                     </button>
