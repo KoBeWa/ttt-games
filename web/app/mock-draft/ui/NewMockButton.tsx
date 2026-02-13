@@ -60,7 +60,7 @@ export default function NewMockButton({
       <button
         onClick={() => setOpen((v) => !v)}
         disabled={!canCreate}
-        className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+        className="rounded-xl border bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
       >
         New Mock
       </button>
@@ -100,13 +100,13 @@ export default function NewMockButton({
           <button
             onClick={createMock}
             disabled={loading || seasons.length === 0 || !canCreate}
-            className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900"
+            className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             {loading ? "Creating..." : "Create"}
           </button>
 
           {!canCreate && (
-            <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            <div className="mt-2 text-xs text-slate-500">
               Pro User ist nur ein Mock Draft erlaubt.
             </div>
           )}
