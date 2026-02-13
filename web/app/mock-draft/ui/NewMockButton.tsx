@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function NewMockButton({ seasons }: { seasons: number[] }) {
+export default function NewMockButton({
+  seasons,
+  canCreate,
+}: {
+  seasons: number[];
+  canCreate: boolean;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [season, setSeason] = useState<number>(seasons?.[0] ?? 2026);
@@ -25,7 +31,7 @@ export default function NewMockButton({ seasons }: { seasons: number[] }) {
       }),
     });
 
-    let data: any = null;
+    let data: { id?: string; error?: string } | null = null;
     try {
       data = await res.json();
     } catch {
@@ -34,6 +40,12 @@ export default function NewMockButton({ seasons }: { seasons: number[] }) {
 
     if (!res.ok) {
       setMsg(data?.error ?? `Fehler (${res.status}): ${res.statusText}`);
+      setLoading(false);
+      return;
+    }
+
+    if (!data?.id) {
+      setMsg("Mock konnte nicht erstellt werden. Bitte erneut versuchen.");
       setLoading(false);
       return;
     }
@@ -47,22 +59,23 @@ export default function NewMockButton({ seasons }: { seasons: number[] }) {
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="rounded-xl border bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-50"
+        disabled={!canCreate}
+        className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
       >
         New Mock
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 rounded-xl border bg-white p-3 shadow-lg z-50">
-          <div className="text-sm font-semibold mb-2">Create new mock</div>
+        <div className="absolute right-0 z-50 mt-2 w-80 rounded-xl border border-slate-200 bg-white p-3 text-slate-900 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+          <div className="mb-2 text-sm font-semibold">Create new mock</div>
 
-          <label className="block text-xs font-semibold text-slate-600 mb-1">
+          <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">
             Season
           </label>
           <select
             value={season}
             onChange={(e) => setSeason(Number(e.target.value))}
-            className="w-full rounded-lg border px-3 py-2 text-sm mb-3"
+            className="mb-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             disabled={seasons.length === 0}
           >
             {seasons.map((s) => (
@@ -72,28 +85,34 @@ export default function NewMockButton({ seasons }: { seasons: number[] }) {
             ))}
           </select>
 
-          <label className="block text-xs font-semibold text-slate-600 mb-1">
+          <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">
             Title
           </label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={`Mock Draft ${season}`}
-            className="w-full rounded-lg border px-3 py-2 text-sm mb-3"
+            className="mb-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
 
-          {msg && <div className="text-xs text-red-600 mb-2">{msg}</div>}
+          {msg && <div className="mb-2 text-xs text-red-600 dark:text-red-400">{msg}</div>}
 
           <button
             onClick={createMock}
-            disabled={loading || seasons.length === 0}
-            className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            disabled={loading || seasons.length === 0 || !canCreate}
+            className="w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900"
           >
             {loading ? "Creating..." : "Create"}
           </button>
 
+          {!canCreate && (
+            <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              Pro User ist nur ein Mock Draft erlaubt.
+            </div>
+          )}
+
           {seasons.length === 0 && (
-            <div className="mt-2 text-xs text-slate-500">
+            <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
               Keine draft_slots gefunden.
             </div>
           )}
