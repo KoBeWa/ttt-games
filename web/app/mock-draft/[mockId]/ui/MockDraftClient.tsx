@@ -313,7 +313,7 @@ export default function MockDraftClient({
   }
 
   async function clearPick(pickNo: number) {
-    if (picksLocked) {
+     if (picksLocked) {
       setMsg(`Picks sind seit ${picksLockedLabel} gesperrt.`);
       return;
     }
@@ -350,7 +350,7 @@ export default function MockDraftClient({
                   ← Dashboard
                 </Link>
                 <div className="mt-1 text-lg font-bold text-slate-900">{mock.title}</div>
-                <div className="text-xs font-semibold text-slate-600">Season {mock.season} • Round 1</div>
+                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">Season {mock.season} • Round 1</div>
               </div>
 
               <div className="flex items-center gap-3">
@@ -362,7 +362,7 @@ export default function MockDraftClient({
                   type="button"
                   onClick={nextUnfilled}
                   disabled={picksLocked}
-                  className="rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  className="rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Next unfilled
                 </button>
@@ -470,7 +470,7 @@ export default function MockDraftClient({
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2">
                                     <TeamLogo team={p.teams} size={40} />
-                                    <div className="truncate text-sm font-bold text-slate-900">
+                                    <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
                                       {picked ? picked.full_name : isActive ? "On the clock" : "Upcoming"}
                                     </div>
 
@@ -490,7 +490,7 @@ export default function MockDraftClient({
                               </div>
 
                               <div className="text-right">
-                                <div className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Needs</div>
+                                <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Needs</div>
                                 <div className="mt-1 text-xs font-semibold text-slate-700 dark:text-slate-300">{needs.join(", ")}</div>
                               </div>
                             </div>
@@ -504,6 +504,7 @@ export default function MockDraftClient({
                                     clearPick(p.pick_no);
                                   }}
                                   disabled={picksLocked}
+                                  
                                   className="text-xs font-semibold text-slate-500 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   Clear
@@ -576,7 +577,7 @@ export default function MockDraftClient({
 
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2">
-                                    <div className="truncate text-sm font-bold text-slate-900">
+                                    <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
                                       {picked ? picked.full_name : "Upcoming"}
                                     </div>
                                     {p.player_id && (
@@ -586,7 +587,7 @@ export default function MockDraftClient({
                                     )}
                                   </div>
 
-                                  <div className="text-xs font-semibold text-slate-600">
+                                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                                     {picked ? `${picked.position} • ${picked.school}` : "Upcoming"}
                                   </div>
                                 </div>
@@ -602,6 +603,7 @@ export default function MockDraftClient({
                                     clearPick(p.pick_no);
                                   }}
                                   disabled={picksLocked}
+                                  
                                   className="text-xs font-semibold text-slate-500 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   Clear
@@ -635,31 +637,31 @@ export default function MockDraftClient({
                       )}
                       <div>
                         <div className="text-lg font-bold text-slate-900">{team?.name ?? "—"}</div>
-                        <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">{onClockLabel}</div>
+                        <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">{onClockLabel}</div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3">
                       <div className="rounded-sm bg-slate-200 px-3 py-2 dark:bg-slate-700">
                         <div className="text-xs font-bold text-slate-500">Needs</div>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{currentNeeds.join(", ")}</div>
+                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{currentNeeds.join(", ")}</div>
                       </div>
 
                       <div className="rounded-sm bg-slate-200 px-3 py-2 dark:bg-slate-700">
                         <div className="text-xs font-bold text-slate-500">Remaining Picks</div>
-                        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{remainingPicksForCurrentTeam}</div>
+                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{remainingPicksForCurrentTeam}</div>
                       </div>
                     </div>
                   </div>
 
                   <div className="mt-3 border-b dark:border-slate-700">
-                    <div className="inline-flex border-b-2 border-blue-600 pb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                    <div className="inline-flex border-b-2 border-blue-600 pb-2 text-sm font-bold text-slate-900">
                       Draft a Player
                     </div>
                   </div>
 
                   <div className="mt-4 rounded-sm border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100">Filter Positions</div>
+                    <div className="text-sm font-bold text-slate-900">Filter Positions</div>
 
                     <div className="mt-3 grid grid-cols-12 gap-3">
                       <div className="col-span-5">
@@ -703,7 +705,7 @@ export default function MockDraftClient({
                           <div className="col-span-2">
                             <div className="text-xs font-bold text-slate-500">Rank</div>
                             <div className="text-lg font-extrabold text-slate-900 dark:text-slate-100">{p.rank_overall}</div>
-                            {p.rank_pos ? <div className="text-xs font-semibold text-slate-600">PR {p.rank_pos}</div> : null}
+                            {p.rank_pos ? <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">PR {p.rank_pos}</div> : null}
                           </div>
 
                           <div className="col-span-8 min-w-0">
@@ -807,11 +809,11 @@ export default function MockDraftClient({
                         </div>
                         <TeamLogo team={p.teams} size={34} />
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-bold text-slate-900">
+                          <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
                             {p.draft_players ? p.draft_players.full_name : isActive ? "On the clock" : "Upcoming"}
                           </div>
                           {p.draft_players ? (
-                            <div className="text-xs font-semibold text-slate-600">
+                            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                               {p.draft_players.position} • {p.draft_players.school}
                             </div>
                           ) : null}
@@ -844,31 +846,31 @@ export default function MockDraftClient({
                     <div className="h-9 w-9 rounded bg-slate-200" />
                   )}
                   <div>
-                    <div className="text-base font-bold text-slate-900 dark:text-slate-100">{team?.name ?? "—"}</div>
-                    <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">{onClockLabel}</div>
+                    <div className="text-base font-bold text-slate-900">{team?.name ?? "—"}</div>
+                    <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">{onClockLabel}</div>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
                   <div className="rounded bg-slate-200 px-3 py-2 dark:bg-slate-700">
-                    <div className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Needs</div>
-                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{currentNeeds.join(", ")}</div>
+                    <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Needs</div>
+                    <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{currentNeeds.join(", ")}</div>
                   </div>
                   <div className="rounded bg-slate-200 px-3 py-2 dark:bg-slate-700">
-                    <div className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Remaining</div>
-                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{remainingPicksForCurrentTeam}</div>
+                    <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Remaining</div>
+                    <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{remainingPicksForCurrentTeam}</div>
                   </div>
                 </div>
               </div>
 
               <div className="mt-4 border-b dark:border-slate-700">
-                <div className="inline-flex border-b-2 border-blue-600 pb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                <div className="inline-flex border-b-2 border-blue-600 pb-2 text-sm font-bold text-slate-900">
                   Draft a Player
                 </div>
               </div>
 
               <div className="mt-4 rounded-sm border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-                <div className="text-sm font-bold text-slate-900 dark:text-slate-100">Filter Positions</div>
+                <div className="text-sm font-bold text-slate-900">Filter Positions</div>
 
                 <div className="mt-3 grid grid-cols-12 gap-3">
                   <div className="col-span-5">
@@ -904,16 +906,16 @@ export default function MockDraftClient({
             {/* players list */}
             <div className="max-h-[55vh] overflow-auto">
               {availablePlayers.map((p) => (
-                <div key={p.id} className="border-t border-slate-200 bg-white px-4 py-4 hover:bg-slate-50">
+                <div key={p.id} className="border-t border-slate-200 px-4 py-4 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <CollegeMark name={p.school} logoUrl={p.college_logo_url} size={44} />
                       <div className="min-w-0">
-                        <div className="truncate text-base font-bold text-slate-900">{p.full_name}</div>
-                        <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        <div className="truncate text-base font-bold text-slate-900 dark:text-slate-100">{p.full_name}</div>
+                        <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">
                           <span className="font-bold">{p.position}</span> &nbsp; {p.school}
                         </div>
-                        <div className="text-xs font-semibold text-slate-600">
+                        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                           Rank <span className="font-bold text-slate-700">{p.rank_overall}</span>
                         </div>
                       </div>
