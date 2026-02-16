@@ -797,7 +797,7 @@ export default function MockDraftClient({
                     tabIndex={0}
                     onClick={() => setCurrentPick(p.pick_no)}
                     className={cn(
-                      "border-t px-4 py-3",
+                      "border-t bg-white px-4 py-3",
                       isActive && "border-l-4 border-l-blue-600",
                       meta.row
                     )}
