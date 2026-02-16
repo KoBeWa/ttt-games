@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createServerReadClient } from "@/lib/supabase/server";
 import MockDraftClient from "./ui/MockDraftClient";
 
+const PICKS_LOCK_AT_ISO = "2026-04-24T00:00:00.000Z"; // 24.04.2026 02:00 in Europe/Berlin
+
 export default async function MockDraftEditorPage({
   params,
 }: {
@@ -32,7 +34,7 @@ export default async function MockDraftEditorPage({
     .eq("season", mock.season);
 
   const realPickMap = new Map<string, number>();
-  (realPicks ?? []).forEach((r: any) => {
+  (realPicks ?? []).forEach((r: { player_id: string; pick_no: number }) => {
     realPickMap.set(r.player_id, r.pick_no);
   });
 
@@ -57,7 +59,31 @@ export default async function MockDraftEditorPage({
 
   // ✅ Normalize + flatten picks
   const normalizedPicks =
-    (picks ?? []).map((p: any) => {
+    (picks ?? []).map((p: {
+      pick_no: number;
+      team_id: string;
+      player_id: string | null;
+      teams:
+        | { abbr: string; name: string; logo_url: string | null }
+        | Array<{ abbr: string; name: string; logo_url: string | null }>
+        | null;
+      draft_players:
+        | {
+            full_name: string;
+            position: string;
+            school: string;
+            rank_overall: number;
+            colleges?: { logo_url: string | null } | Array<{ logo_url: string | null }> | null;
+          }
+        | Array<{
+            full_name: string;
+            position: string;
+            school: string;
+            rank_overall: number;
+            colleges?: { logo_url: string | null } | Array<{ logo_url: string | null }> | null;
+          }>
+        | null;
+    }) => {
       const teams = Array.isArray(p.teams) ? p.teams[0] ?? null : p.teams ?? null;
 
       const draftPlayer = Array.isArray(p.draft_players)
@@ -105,7 +131,15 @@ export default async function MockDraftEditorPage({
 
   // ✅ Normalize + flatten players
   const normalizedPlayers =
-    (players ?? []).map((p: any) => {
+    (players ?? []).map((p: {
+      id: string;
+      full_name: string;
+      position: string;
+      school: string;
+      rank_overall: number;
+      rank_pos: number | null;
+      colleges: { logo_url: string | null } | Array<{ logo_url: string | null }> | null;
+    }) => {
       const collegeObj = Array.isArray(p.colleges) ? p.colleges[0] ?? null : p.colleges ?? null;
   
       return {
@@ -125,8 +159,9 @@ export default async function MockDraftEditorPage({
     <MockDraftClient
       mock={mock}
       initialPicks={normalizedPicks}
-      teamNeeds={needs ?? ([]) }
+      teamNeeds={needs ?? []}
       initialPlayers={normalizedPlayers}
+      picksLockAtIso={PICKS_LOCK_AT_ISO}
     />
   );
 }
