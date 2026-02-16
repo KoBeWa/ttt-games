@@ -804,7 +804,7 @@ export default function MockDraftClient({
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-12 text-xs font-bold text-slate-500">
+                        <div className="w-12 text-xs font-bold text-slate-700">
                           Pick<br />{p.pick_no}
                         </div>
                         <TeamLogo team={p.teams} size={34} />
