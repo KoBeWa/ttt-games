@@ -562,12 +562,12 @@ export default function MockDraftClient({
                             <div className="grid grid-cols-12 items-center gap-2">
                               <div className="col-span-2">
                                 <div className="text-xs font-bold text-slate-500">Rd</div>
-                                <div className="text-sm font-bold text-slate-900">1</div>
+                                <div className="text-sm font-bold text-slate-900 dark:text-slate-100">1</div>
                               </div>
 
                               <div className="col-span-2">
                                 <div className="text-xs font-bold text-slate-500">Pick</div>
-                                <div className="text-sm font-bold text-slate-900">{p.pick_no}</div>
+                                <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{p.pick_no}</div>
                               </div>
 
                               <div className="col-span-8 flex items-center gap-3">
@@ -738,7 +738,7 @@ export default function MockDraftClient({
                   })}
 
                   {availablePlayers.length === 0 && (
-                    <div className="p-6 text-sm font-semibold text-slate-600">No players match your filter.</div>
+                    <div className="p-6 text-sm font-semibold text-slate-600 dark:text-slate-300">No players match your filter.</div>
                   )}
                 </div>
               </div>
@@ -758,7 +758,7 @@ export default function MockDraftClient({
                     onClick={() => setLeftTab("FULL")}
                     className={cn(
                       "pb-3 text-[12px] font-semibold uppercase tracking-wide",
-                      leftTab === "FULL" ? "border-b-4 border-blue-600 text-slate-900" : "text-slate-500"
+                      leftTab === "FULL" ? "border-b-4 border-blue-600 text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-300"
                     )}
                   >
                     FULL DRAFT
@@ -769,7 +769,7 @@ export default function MockDraftClient({
                     onClick={() => setLeftTab("YOUR")}
                     className={cn(
                       "pb-3 text-[12px] font-semibold uppercase tracking-wide",
-                      leftTab === "YOUR" ? "border-b-4 border-blue-600 text-slate-900" : "text-slate-500"
+                      leftTab === "YOUR" ? "border-b-4 border-blue-600 text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-300"
                     )}
                   >
                     YOUR PICKS
@@ -934,7 +934,7 @@ export default function MockDraftClient({
               ))}
 
               {availablePlayers.length === 0 && (
-                <div className="p-6 text-sm font-semibold text-slate-600">No players match your filter.</div>
+                <div className="p-6 text-sm font-semibold text-slate-600 dark:text-slate-300">No players match your filter.</div>
               )}
             </div>
           </div>
