@@ -62,7 +62,7 @@ function scoreMeta(score: number) {
     };
   if (score === 50)
     return {
-      badge: "bg-amber-400 text-slate-900",
+      badge: "bg-amber-400 text-slate-900 dark:text-slate-100",
       row: "bg-amber-50",
       label: "±1",
     };
@@ -349,7 +349,7 @@ export default function MockDraftClient({
                 <Link href="/app" className="text-sm font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white">
                   ← Dashboard
                 </Link>
-                <div className="mt-1 text-lg font-bold text-slate-900">{mock.title}</div>
+                <div className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{mock.title}</div>
                 <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">Season {mock.season} • Round 1</div>
               </div>
 
@@ -406,7 +406,7 @@ export default function MockDraftClient({
                         className={cn(
                           "pb-3 text-[12px] font-semibold uppercase tracking-wide",
                           leftTab === "FULL"
-                            ? "border-b-4 border-blue-600 text-slate-900"
+                            ? "border-b-4 border-blue-600 text-slate-900 dark:text-slate-100"
                             : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                         )}
                       >
@@ -419,7 +419,7 @@ export default function MockDraftClient({
                         className={cn(
                           "pb-3 text-[12px] font-semibold uppercase tracking-wide",
                           leftTab === "YOUR"
-                            ? "border-b-4 border-blue-600 text-slate-900"
+                            ? "border-b-4 border-blue-600 text-slate-900 dark:text-slate-100"
                             : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                         )}
                       >
@@ -461,7 +461,7 @@ export default function MockDraftClient({
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex items-start gap-3 min-w-0">
-                                <div className="w-12 shrink-0 text-xs font-bold text-slate-500">
+                                <div className="w-12 shrink-0 text-xs font-bold text-slate-500 dark:text-slate-300">
                                   Pick
                                   <br />
                                   {p.pick_no}
@@ -482,7 +482,7 @@ export default function MockDraftClient({
                                   </div>
 
                                   {picked ? (
-                                    <div className="mt-1 text-xs font-semibold text-slate-500">
+                                    <div className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-300">
                                       {picked.position} • {picked.school}
                                     </div>
                                   ) : null}
@@ -561,12 +561,12 @@ export default function MockDraftClient({
                           >
                             <div className="grid grid-cols-12 items-center gap-2">
                               <div className="col-span-2">
-                                <div className="text-xs font-bold text-slate-500">Rd</div>
+                                <div className="text-xs font-bold text-slate-500 dark:text-slate-300">Rd</div>
                                 <div className="text-sm font-bold text-slate-900 dark:text-slate-100">1</div>
                               </div>
 
                               <div className="col-span-2">
-                                <div className="text-xs font-bold text-slate-500">Pick</div>
+                                <div className="text-xs font-bold text-slate-500 dark:text-slate-300">Pick</div>
                                 <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{p.pick_no}</div>
                               </div>
 
@@ -636,32 +636,32 @@ export default function MockDraftClient({
                         <div className="h-8 w-8 rounded bg-slate-200" />
                       )}
                       <div>
-                        <div className="text-lg font-bold text-slate-900">{team?.name ?? "—"}</div>
+                        <div className="text-lg font-bold text-slate-900 dark:text-slate-100">{team?.name ?? "—"}</div>
                         <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">{onClockLabel}</div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3">
                       <div className="rounded-sm bg-slate-200 px-3 py-2 dark:bg-slate-700">
-                        <div className="text-xs font-bold text-slate-500">Needs</div>
+                        <div className="text-xs font-bold text-slate-500 dark:text-slate-300">Needs</div>
                         <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{currentNeeds.join(", ")}</div>
                       </div>
 
                       <div className="rounded-sm bg-slate-200 px-3 py-2 dark:bg-slate-700">
-                        <div className="text-xs font-bold text-slate-500">Remaining Picks</div>
+                        <div className="text-xs font-bold text-slate-500 dark:text-slate-300">Remaining Picks</div>
                         <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{remainingPicksForCurrentTeam}</div>
                       </div>
                     </div>
                   </div>
 
                   <div className="mt-3 border-b dark:border-slate-700">
-                    <div className="inline-flex border-b-2 border-blue-600 pb-2 text-sm font-bold text-slate-900">
+                    <div className="inline-flex border-b-2 border-blue-600 pb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
                       Draft a Player
                     </div>
                   </div>
 
                   <div className="mt-4 rounded-sm border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-                    <div className="text-sm font-bold text-slate-900">Filter Positions</div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100">Filter Positions</div>
 
                     <div className="mt-3 grid grid-cols-12 gap-3">
                       <div className="col-span-5">
@@ -686,7 +686,7 @@ export default function MockDraftClient({
                             value={q}
                             onChange={(e) => setQ(e.target.value)}
                             placeholder="Search All Players..."
-                            className="w-full bg-transparent text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-500"
+                            className="w-full bg-transparent text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-500 dark:text-slate-300"
                           />
                         </div>
                       </div>
@@ -703,7 +703,7 @@ export default function MockDraftClient({
                       <div key={p.id} className="border-t border-slate-200 px-5 py-4 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
                         <div className="grid grid-cols-12 items-center gap-3">
                           <div className="col-span-2">
-                            <div className="text-xs font-bold text-slate-500">Rank</div>
+                            <div className="text-xs font-bold text-slate-500 dark:text-slate-300">Rank</div>
                             <div className="text-lg font-extrabold text-slate-900 dark:text-slate-100">{p.rank_overall}</div>
                             {p.rank_pos ? <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">PR {p.rank_pos}</div> : null}
                           </div>
@@ -713,8 +713,8 @@ export default function MockDraftClient({
                               <CollegeMark name={p.school} logoUrl={p.college_logo_url} size={44} />
 
                               <div className="min-w-0">
-                                <div className="truncate text-lg font-bold text-slate-900">{p.full_name}</div>
-                                <div className="mt-0.5 text-sm font-semibold text-slate-600">
+                                <div className="truncate text-lg font-bold text-slate-900 dark:text-slate-100">{p.full_name}</div>
+                                <div className="mt-0.5 text-sm font-semibold text-slate-600 dark:text-slate-300">
                                   <span className="font-bold">{p.position}</span> &nbsp; {p.school}
                                   {match ? <span className="ml-2 text-xs font-bold text-emerald-700">NEED</span> : null}
                                 </div>
@@ -846,7 +846,7 @@ export default function MockDraftClient({
                     <div className="h-9 w-9 rounded bg-slate-200" />
                   )}
                   <div>
-                    <div className="text-base font-bold text-slate-900">{team?.name ?? "—"}</div>
+                    <div className="text-base font-bold text-slate-900 dark:text-slate-100">{team?.name ?? "—"}</div>
                     <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">{onClockLabel}</div>
                   </div>
                 </div>
@@ -864,13 +864,13 @@ export default function MockDraftClient({
               </div>
 
               <div className="mt-4 border-b dark:border-slate-700">
-                <div className="inline-flex border-b-2 border-blue-600 pb-2 text-sm font-bold text-slate-900">
+                <div className="inline-flex border-b-2 border-blue-600 pb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
                   Draft a Player
                 </div>
               </div>
 
               <div className="mt-4 rounded-sm border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-                <div className="text-sm font-bold text-slate-900">Filter Positions</div>
+                <div className="text-sm font-bold text-slate-900 dark:text-slate-100">Filter Positions</div>
 
                 <div className="mt-3 grid grid-cols-12 gap-3">
                   <div className="col-span-5">
@@ -895,7 +895,7 @@ export default function MockDraftClient({
                         value={q}
                         onChange={(e) => setQ(e.target.value)}
                         placeholder="Search All Players..."
-                        className="w-full bg-transparent text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-500"
+                        className="w-full bg-transparent text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-500 dark:text-slate-300"
                       />
                     </div>
                   </div>
