@@ -57,35 +57,29 @@ function scoreMeta(score: number) {
   if (score === 100)
     return {
       badge: "bg-emerald-600 text-white",
-      row: "bg-emerald-50",
+      row: "bg-emerald-50 dark:bg-emerald-950/40",
       label: "Perfect",
     };
   if (score === 50)
     return {
-      badge: "bg-amber-400 text-slate-900 dark:text-slate-100",
-      row: "bg-amber-50",
+      badge: "bg-amber-400 text-slate-900",
+      row: "bg-amber-50 dark:bg-amber-950/30",
       label: "±1",
     };
   if (score === 20)
     return {
       badge: "bg-sky-600 text-white",
-      row: "bg-sky-50",
+      row: "bg-sky-50 dark:bg-sky-950/35",
       label: "≤5",
     };
   return {
-    badge: "bg-slate-200 text-slate-700",
+    badge: "bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100",
     row: "",
     label: "—",
   };
 }
 
-function TeamLogo({
-  team,
-  size = 24,
-}: {
-  team: PickRow["teams"];
-  size?: number;
-}) {
+function TeamLogo({ team, size = 24 }: { team: PickRow["teams"]; size?: number }) {
   const s = `${size}px`;
   if (team?.logo_url) {
     return (
@@ -103,7 +97,7 @@ function TeamLogo({
 
   return (
     <div
-      className="flex items-center justify-center rounded bg-slate-200 text-[10px] font-semibold text-slate-700"
+      className="flex items-center justify-center rounded bg-slate-200 text-[10px] font-bold text-slate-800 dark:bg-slate-700 dark:text-slate-100"
       style={{ width: s, height: s }}
       aria-label={team?.abbr ?? "TEAM"}
       title={team?.abbr ?? ""}
@@ -120,15 +114,7 @@ function initials(name?: string) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function CollegeMark({
-  name,
-  logoUrl,
-  size = 44,
-}: {
-  name: string;
-  logoUrl: string | null;
-  size?: number;
-}) {
+function CollegeMark({ name, logoUrl, size = 44 }: { name: string; logoUrl: string | null; size?: number }) {
   const s = `${size}px`;
   if (logoUrl) {
     return (
@@ -137,7 +123,7 @@ function CollegeMark({
         alt={name}
         width={size}
         height={size}
-        className="rounded-full bg-white object-contain ring-1 ring-slate-200"
+        className="rounded-full bg-white object-contain ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700"
         style={{ width: s, height: s }}
         loading="lazy"
       />
@@ -146,7 +132,7 @@ function CollegeMark({
 
   return (
     <div
-      className="flex items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 ring-1 ring-slate-200"
+      className="flex items-center justify-center rounded-full bg-slate-100 text-xs font-extrabold text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700"
       style={{ width: s, height: s }}
       title={name}
       aria-label={name}
@@ -191,6 +177,33 @@ export default function MockDraftClient({
   const [leftTab, setLeftTab] = useState<"FULL" | "YOUR">("FULL");
   const [yourTeamId, setYourTeamId] = useState<string>(() => initialPicks[0]?.team_id ?? "");
 
+  // ---- UI tokens (Kontrast im Dark Mode) ----
+  const T = {
+    page: "bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100",
+    card: "rounded-md border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900",
+    cardInnerSoft: "bg-slate-100 dark:bg-slate-800",
+    border: "border-slate-200 dark:border-slate-700",
+    borderStrong: "border-slate-300 dark:border-slate-600",
+
+    textPrimary: "text-slate-900 dark:text-slate-100",
+    textSecondary: "text-slate-600 dark:text-slate-300",
+    textMuted: "text-slate-500 dark:text-slate-400",
+    textMutedStrong: "text-slate-600 dark:text-slate-300",
+
+    tabActive: "border-b-4 border-blue-600 text-slate-900 dark:text-slate-100",
+    tabInactive: "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white",
+
+    inputWrap:
+      "flex items-center rounded-sm border border-slate-300 bg-white px-3 py-2 dark:border-slate-600 dark:bg-slate-800",
+    input:
+      "w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-400",
+    select:
+      "w-full rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100",
+
+    btn:
+      "rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800",
+  };
+
   const needsMap = useMemo(() => {
     const m = new Map<string, string[]>();
     teamNeeds.forEach((n) => m.set(n.team_id, n.needs ?? []));
@@ -203,10 +216,7 @@ export default function MockDraftClient({
     return m;
   }, [initialPlayers]);
 
-  const currentPickRow = useMemo(
-    () => picks.find((p) => p.pick_no === currentPick),
-    [picks, currentPick]
-  );
+  const currentPickRow = useMemo(() => picks.find((p) => p.pick_no === currentPick), [picks, currentPick]);
 
   const team = currentPickRow?.teams;
 
@@ -313,7 +323,7 @@ export default function MockDraftClient({
   }
 
   async function clearPick(pickNo: number) {
-     if (picksLocked) {
+    if (picksLocked) {
       setMsg(`Picks sind seit ${picksLockedLabel} gesperrt.`);
       return;
     }
@@ -339,36 +349,36 @@ export default function MockDraftClient({
   const onClockLabel = currentPickRow?.draft_players ? currentPickRow.draft_players.full_name : "On the clock";
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <div className={cn("min-h-screen", T.page)}>
       <div className="mx-auto max-w-[1180px] px-4 sm:px-6">
         {/* top nav */}
         <div className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-700 dark:bg-slate-900/90">
           <div className="py-3">
             <div className="flex items-center justify-between gap-4">
               <div className="flex flex-col">
-                <Link href="/app" className="text-sm font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white">
+                <Link
+                  href="/app"
+                  className="text-sm font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                >
                   ← Dashboard
                 </Link>
-                <div className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{mock.title}</div>
-                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">Season {mock.season} • Round 1</div>
+                <div className={cn("mt-1 text-lg font-extrabold", T.textPrimary)}>{mock.title}</div>
+                <div className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                  Season {mock.season} • Round 1
+                </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="hidden sm:block rounded bg-emerald-600 px-4 py-2 text-sm font-bold text-white">
+                <div className="hidden sm:block rounded bg-emerald-600 px-4 py-2 text-sm font-extrabold text-white">
                   Score: {totalScore}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={nextUnfilled}
-                  disabled={picksLocked}
-                  className="rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
+                <button type="button" onClick={nextUnfilled} disabled={picksLocked} className={T.btn}>
                   Next unfilled
                 </button>
 
                 {msg && (
-                  <span className="rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
+                  <span className="rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-xs font-extrabold text-red-800 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-200">
                     {msg}
                   </span>
                 )}
@@ -376,14 +386,14 @@ export default function MockDraftClient({
             </div>
 
             {picksLocked && (
-              <div className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+              <div className="mt-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/35 dark:text-amber-200">
                 Picks sind gesperrt (Deadline: {picksLockedLabel}).
               </div>
             )}
 
             {/* mobile score */}
             <div className="mt-3 sm:hidden">
-              <div className="rounded bg-emerald-600 px-4 py-2 text-sm font-bold text-white">
+              <div className="rounded bg-emerald-600 px-4 py-2 text-sm font-extrabold text-white">
                 Score: {totalScore}
               </div>
             </div>
@@ -395,7 +405,7 @@ export default function MockDraftClient({
           <div className="grid grid-cols-12 gap-5">
             {/* LEFT */}
             <div className="col-span-4">
-              <div className="rounded-md border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <div className={T.card}>
                 {/* tabs */}
                 <div className="border-b bg-white dark:border-slate-700 dark:bg-slate-900">
                   <div className="flex items-center justify-between px-4 pt-3">
@@ -404,10 +414,8 @@ export default function MockDraftClient({
                         type="button"
                         onClick={() => setLeftTab("FULL")}
                         className={cn(
-                          "pb-3 text-[12px] font-semibold uppercase tracking-wide",
-                          leftTab === "FULL"
-                            ? "border-b-4 border-blue-600 text-slate-900 dark:text-slate-100"
-                            : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                          "pb-3 text-[12px] font-extrabold uppercase tracking-wide",
+                          leftTab === "FULL" ? T.tabActive : T.tabInactive
                         )}
                       >
                         FULL DRAFT
@@ -417,10 +425,8 @@ export default function MockDraftClient({
                         type="button"
                         onClick={() => setLeftTab("YOUR")}
                         className={cn(
-                          "pb-3 text-[12px] font-semibold uppercase tracking-wide",
-                          leftTab === "YOUR"
-                            ? "border-b-4 border-blue-600 text-slate-900 dark:text-slate-100"
-                            : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                          "pb-3 text-[12px] font-extrabold uppercase tracking-wide",
+                          leftTab === "YOUR" ? T.tabActive : T.tabInactive
                         )}
                       >
                         YOUR PICKS
@@ -432,7 +438,7 @@ export default function MockDraftClient({
                 {leftTab === "FULL" ? (
                   <>
                     <div className="border-b bg-slate-200 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
-                      <div className="text-sm font-bold text-slate-800">ROUND 1</div>
+                      <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100">ROUND 1</div>
                     </div>
 
                     <div className="max-h-[78vh] overflow-auto">
@@ -454,14 +460,15 @@ export default function MockDraftClient({
                               if (e.key === "Enter" || e.key === " ") setCurrentPick(p.pick_no);
                             }}
                             className={cn(
-                              "border-t px-4 py-3 text-left hover:bg-slate-50 outline-none",
-                              isActive && "bg-white border-l-4 border-l-blue-600",
-                              meta.row
+                              "border-t px-4 py-3 text-left outline-none hover:bg-slate-50 dark:hover:bg-slate-800",
+                              isActive && "bg-white border-l-4 border-l-blue-600 dark:bg-slate-900",
+                              meta.row,
+                              "dark:border-slate-700"
                             )}
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex items-start gap-3 min-w-0">
-                                <div className="w-12 shrink-0 text-xs font-bold text-slate-500 dark:text-slate-300">
+                                <div className="w-12 shrink-0 text-xs font-extrabold text-slate-600 dark:text-slate-300">
                                   Pick
                                   <br />
                                   {p.pick_no}
@@ -470,19 +477,24 @@ export default function MockDraftClient({
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2">
                                     <TeamLogo team={p.teams} size={40} />
-                                    <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
+                                    <div className="truncate text-sm font-extrabold text-slate-900 dark:text-slate-100">
                                       {picked ? picked.full_name : isActive ? "On the clock" : "Upcoming"}
                                     </div>
 
                                     {p.player_id && (
-                                      <span className={cn("ml-1 inline-flex items-center rounded px-2 py-[2px] text-[11px] font-extrabold", meta.badge)}>
+                                      <span
+                                        className={cn(
+                                          "ml-1 inline-flex items-center rounded px-2 py-[2px] text-[11px] font-extrabold",
+                                          meta.badge
+                                        )}
+                                      >
                                         +{score}
                                       </span>
                                     )}
                                   </div>
 
                                   {picked ? (
-                                    <div className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-300">
+                                    <div className="mt-1 text-xs font-bold text-slate-600 dark:text-slate-300">
                                       {picked.position} • {picked.school}
                                     </div>
                                   ) : null}
@@ -490,8 +502,12 @@ export default function MockDraftClient({
                               </div>
 
                               <div className="text-right">
-                                <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Needs</div>
-                                <div className="mt-1 text-xs font-semibold text-slate-700 dark:text-slate-300">{needs.join(", ")}</div>
+                                <div className="text-[12px] font-extrabold text-slate-600 dark:text-slate-300">
+                                  Needs
+                                </div>
+                                <div className="mt-1 text-xs font-bold text-slate-800 dark:text-slate-200">
+                                  {needs.join(", ")}
+                                </div>
                               </div>
                             </div>
 
@@ -504,8 +520,7 @@ export default function MockDraftClient({
                                     clearPick(p.pick_no);
                                   }}
                                   disabled={picksLocked}
-                                  
-                                  className="text-xs font-semibold text-slate-500 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                  className="text-xs font-bold text-slate-600 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-300 dark:hover:text-white"
                                 >
                                   Clear
                                 </button>
@@ -520,13 +535,11 @@ export default function MockDraftClient({
                   <>
                     <div className="border-b bg-slate-100 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
                       <div className="flex items-center justify-between gap-3">
-                        <div className="text-sm font-bold text-slate-800">Your Team&apos;s Picks</div>
+                        <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                          Your Team&apos;s Picks
+                        </div>
 
-                        <select
-                          value={yourTeamId}
-                          onChange={(e) => setYourTeamId(e.target.value)}
-                          className="w-60 rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                        >
+                        <select value={yourTeamId} onChange={(e) => setYourTeamId(e.target.value)} className={cn(T.select, "w-60")}>
                           {allTeams.map((t) => (
                             <option key={t.id} value={t.id}>
                               {t.name}
@@ -554,30 +567,31 @@ export default function MockDraftClient({
                               if (e.key === "Enter" || e.key === " ") setCurrentPick(p.pick_no);
                             }}
                             className={cn(
-                              "border-t px-4 py-3 hover:bg-slate-50 outline-none",
-                              isActive && "bg-white border-l-4 border-l-blue-600",
-                              meta.row
+                              "border-t px-4 py-3 outline-none hover:bg-slate-50 dark:hover:bg-slate-800",
+                              isActive && "bg-white border-l-4 border-l-blue-600 dark:bg-slate-900",
+                              meta.row,
+                              "dark:border-slate-700"
                             )}
                           >
                             <div className="grid grid-cols-12 items-center gap-2">
                               <div className="col-span-2">
-                                <div className="text-xs font-bold text-slate-500 dark:text-slate-300">Rd</div>
-                                <div className="text-sm font-bold text-slate-900 dark:text-slate-100">1</div>
+                                <div className="text-xs font-extrabold text-slate-600 dark:text-slate-300">Rd</div>
+                                <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100">1</div>
                               </div>
 
                               <div className="col-span-2">
-                                <div className="text-xs font-bold text-slate-500 dark:text-slate-300">Pick</div>
-                                <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{p.pick_no}</div>
+                                <div className="text-xs font-extrabold text-slate-600 dark:text-slate-300">Pick</div>
+                                <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100">{p.pick_no}</div>
                               </div>
 
                               <div className="col-span-8 flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-xs font-extrabold text-slate-800 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700">
                                   {picked ? initials(picked.full_name) : "—"}
                                 </div>
 
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2">
-                                    <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
+                                    <div className="truncate text-sm font-extrabold text-slate-900 dark:text-slate-100">
                                       {picked ? picked.full_name : "Upcoming"}
                                     </div>
                                     {p.player_id && (
@@ -587,7 +601,7 @@ export default function MockDraftClient({
                                     )}
                                   </div>
 
-                                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                  <div className="text-xs font-bold text-slate-600 dark:text-slate-300">
                                     {picked ? `${picked.position} • ${picked.school}` : "Upcoming"}
                                   </div>
                                 </div>
@@ -603,8 +617,7 @@ export default function MockDraftClient({
                                     clearPick(p.pick_no);
                                   }}
                                   disabled={picksLocked}
-                                  
-                                  className="text-xs font-semibold text-slate-500 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                  className="text-xs font-bold text-slate-600 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-300 dark:hover:text-white"
                                 >
                                   Clear
                                 </button>
@@ -621,8 +634,8 @@ export default function MockDraftClient({
 
             {/* RIGHT */}
             <div className="col-span-8">
-              <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <div className="flex items-center justify-between bg-zinc-700 px-5 py-3 text-white dark:bg-zinc-800">
+              <div className={cn("overflow-hidden", T.card)}>
+                <div className="flex items-center justify-between bg-zinc-800 px-5 py-3 text-white dark:bg-zinc-900">
                   <div className="text-sm font-extrabold tracking-wide">YOU&apos;RE ON THE CLOCK!</div>
                   <div className="text-sm font-extrabold">ROUND 1, PICK {currentPick}</div>
                 </div>
@@ -631,45 +644,43 @@ export default function MockDraftClient({
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
                       {team?.logo_url ? (
-                        <img src={team.logo_url} alt={team.abbr} className="h-8 w-8 rounded object-contain" />
+                        <img src={team.logo_url} alt={team.abbr} className="h-8 w-8 rounded bg-white object-contain ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700" />
                       ) : (
-                        <div className="h-8 w-8 rounded bg-slate-200" />
+                        <div className="h-8 w-8 rounded bg-slate-200 dark:bg-slate-700" />
                       )}
                       <div>
-                        <div className="text-lg font-bold text-slate-900 dark:text-slate-100">{team?.name ?? "—"}</div>
-                        <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">{onClockLabel}</div>
+                        <div className="text-lg font-extrabold text-slate-900 dark:text-slate-100">{team?.name ?? "—"}</div>
+                        <div className="text-sm font-bold text-slate-700 dark:text-slate-300">{onClockLabel}</div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <div className="rounded-sm bg-slate-200 px-3 py-2 dark:bg-slate-700">
-                        <div className="text-xs font-bold text-slate-500 dark:text-slate-300">Needs</div>
-                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{currentNeeds.join(", ")}</div>
+                      <div className="rounded-sm bg-slate-200 px-3 py-2 dark:bg-slate-900/40 dark:ring-1 dark:ring-slate-700">
+                        <div className="text-xs font-extrabold text-slate-700 dark:text-slate-300">Needs</div>
+                        <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                          {currentNeeds.join(", ")}
+                        </div>
                       </div>
 
-                      <div className="rounded-sm bg-slate-200 px-3 py-2 dark:bg-slate-700">
-                        <div className="text-xs font-bold text-slate-500 dark:text-slate-300">Remaining Picks</div>
-                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{remainingPicksForCurrentTeam}</div>
+                      <div className="rounded-sm bg-slate-200 px-3 py-2 dark:bg-slate-900/40 dark:ring-1 dark:ring-slate-700">
+                        <div className="text-xs font-extrabold text-slate-700 dark:text-slate-300">Remaining Picks</div>
+                        <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100">{remainingPicksForCurrentTeam}</div>
                       </div>
                     </div>
                   </div>
 
                   <div className="mt-3 border-b dark:border-slate-700">
-                    <div className="inline-flex border-b-2 border-blue-600 pb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                    <div className="inline-flex border-b-2 border-blue-600 pb-2 text-sm font-extrabold text-slate-900 dark:text-slate-100">
                       Draft a Player
                     </div>
                   </div>
 
                   <div className="mt-4 rounded-sm border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100">Filter Positions</div>
+                    <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100">Filter Positions</div>
 
                     <div className="mt-3 grid grid-cols-12 gap-3">
                       <div className="col-span-5">
-                        <select
-                          value={pos}
-                          onChange={(e) => setPos(e.target.value)}
-                          className="w-full rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                        >
+                        <select value={pos} onChange={(e) => setPos(e.target.value)} className={T.select}>
                           <option value="ALL">All</option>
                           {["QB", "HB", "WR", "TE", "T", "G", "C", "ED", "DI", "LB", "CB", "S"].map((x) => (
                             <option key={x} value={x}>
@@ -680,13 +691,13 @@ export default function MockDraftClient({
                       </div>
 
                       <div className="col-span-7">
-                        <div className="flex items-center rounded-sm border border-slate-300 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800">
-                          <span className="mr-2 text-slate-400">🔍</span>
+                        <div className={T.inputWrap}>
+                          <span className="mr-2 text-slate-400 dark:text-slate-400">🔍</span>
                           <input
                             value={q}
                             onChange={(e) => setQ(e.target.value)}
                             placeholder="Search All Players..."
-                            className="w-full bg-transparent text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-500 dark:text-slate-300"
+                            className={T.input}
                           />
                         </div>
                       </div>
@@ -700,12 +711,17 @@ export default function MockDraftClient({
                     const match = currentNeeds.includes(p.position);
 
                     return (
-                      <div key={p.id} className="border-t border-slate-200 px-5 py-4 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
+                      <div
+                        key={p.id}
+                        className="border-t border-slate-200 px-5 py-4 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+                      >
                         <div className="grid grid-cols-12 items-center gap-3">
                           <div className="col-span-2">
-                            <div className="text-xs font-bold text-slate-500 dark:text-slate-300">Rank</div>
+                            <div className="text-xs font-extrabold text-slate-600 dark:text-slate-300">Rank</div>
                             <div className="text-lg font-extrabold text-slate-900 dark:text-slate-100">{p.rank_overall}</div>
-                            {p.rank_pos ? <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">PR {p.rank_pos}</div> : null}
+                            {p.rank_pos ? (
+                              <div className="text-xs font-bold text-slate-600 dark:text-slate-300">PR {p.rank_pos}</div>
+                            ) : null}
                           </div>
 
                           <div className="col-span-8 min-w-0">
@@ -713,10 +729,16 @@ export default function MockDraftClient({
                               <CollegeMark name={p.school} logoUrl={p.college_logo_url} size={44} />
 
                               <div className="min-w-0">
-                                <div className="truncate text-lg font-bold text-slate-900 dark:text-slate-100">{p.full_name}</div>
-                                <div className="mt-0.5 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                                  <span className="font-bold">{p.position}</span> &nbsp; {p.school}
-                                  {match ? <span className="ml-2 text-xs font-bold text-emerald-700">NEED</span> : null}
+                                <div className="truncate text-lg font-extrabold text-slate-900 dark:text-slate-100">
+                                  {p.full_name}
+                                </div>
+                                <div className="mt-0.5 text-sm font-bold text-slate-700 dark:text-slate-300">
+                                  <span className="font-extrabold">{p.position}</span> &nbsp; {p.school}
+                                  {match ? (
+                                    <span className="ml-2 rounded bg-emerald-100 px-2 py-[1px] text-xs font-extrabold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+                                      NEED
+                                    </span>
+                                  ) : null}
                                 </div>
                               </div>
                             </div>
@@ -727,7 +749,7 @@ export default function MockDraftClient({
                               type="button"
                               onClick={() => selectPlayer(p)}
                               disabled={picksLocked}
-                              className="rounded-sm bg-[#0b3a75] px-6 py-2 text-sm font-bold text-white hover:bg-[#0a3163] disabled:cursor-not-allowed disabled:opacity-50"
+                              className="rounded-sm bg-[#0b3a75] px-6 py-2 text-sm font-extrabold text-white hover:bg-[#0a3163] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               Draft
                             </button>
@@ -738,7 +760,9 @@ export default function MockDraftClient({
                   })}
 
                   {availablePlayers.length === 0 && (
-                    <div className="p-6 text-sm font-semibold text-slate-600 dark:text-slate-300">No players match your filter.</div>
+                    <div className="p-6 text-sm font-bold text-slate-700 dark:text-slate-300">
+                      No players match your filter.
+                    </div>
                   )}
                 </div>
               </div>
@@ -748,8 +772,8 @@ export default function MockDraftClient({
 
         {/* MOBILE layout (PFF-like stacked) */}
         <div className="md:hidden py-4">
-          {/* Tabs */}
-          <div className="rounded-md border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className={cn("overflow-hidden", T.card)}>
+            {/* Tabs */}
             <div className="border-b bg-white dark:border-slate-700 dark:bg-slate-900">
               <div className="flex items-center justify-between px-4 pt-3">
                 <div className="flex gap-8">
@@ -757,8 +781,8 @@ export default function MockDraftClient({
                     type="button"
                     onClick={() => setLeftTab("FULL")}
                     className={cn(
-                      "pb-3 text-[12px] font-semibold uppercase tracking-wide",
-                      leftTab === "FULL" ? "border-b-4 border-blue-600 text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-300"
+                      "pb-3 text-[12px] font-extrabold uppercase tracking-wide",
+                      leftTab === "FULL" ? T.tabActive : T.tabInactive
                     )}
                   >
                     FULL DRAFT
@@ -768,8 +792,8 @@ export default function MockDraftClient({
                     type="button"
                     onClick={() => setLeftTab("YOUR")}
                     className={cn(
-                      "pb-3 text-[12px] font-semibold uppercase tracking-wide",
-                      leftTab === "YOUR" ? "border-b-4 border-blue-600 text-slate-900 dark:text-white" : "text-slate-500 dark:text-slate-300"
+                      "pb-3 text-[12px] font-extrabold uppercase tracking-wide",
+                      leftTab === "YOUR" ? T.tabActive : T.tabInactive
                     )}
                   >
                     YOUR PICKS
@@ -780,7 +804,7 @@ export default function MockDraftClient({
 
             {/* pick list */}
             <div className="border-b bg-slate-200 px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
-              <div className="text-sm font-bold text-slate-800">ROUND 1</div>
+              <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100">ROUND 1</div>
             </div>
 
             <div className="max-h-[45vh] overflow-auto">
@@ -797,23 +821,26 @@ export default function MockDraftClient({
                     tabIndex={0}
                     onClick={() => setCurrentPick(p.pick_no)}
                     className={cn(
-                      "border-t bg-white px-4 py-3",
+                      "border-t px-4 py-3",
                       isActive && "border-l-4 border-l-blue-600",
-                      meta.row
+                      meta.row,
+                      "bg-white dark:bg-slate-900 dark:border-slate-700"
                     )}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-12 text-xs font-bold text-slate-700">
-                          Pick<br />{p.pick_no}
+                        <div className="w-12 text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                          Pick
+                          <br />
+                          {p.pick_no}
                         </div>
                         <TeamLogo team={p.teams} size={34} />
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
+                          <div className="truncate text-sm font-extrabold text-slate-900 dark:text-slate-100">
                             {p.draft_players ? p.draft_players.full_name : isActive ? "On the clock" : "Upcoming"}
                           </div>
                           {p.draft_players ? (
-                            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
                               {p.draft_players.position} • {p.draft_players.school}
                             </div>
                           ) : null}
@@ -832,7 +859,7 @@ export default function MockDraftClient({
             </div>
 
             {/* on clock header + needs */}
-            <div className="bg-zinc-700 px-4 py-3 text-white dark:bg-zinc-800">
+            <div className="bg-zinc-800 px-4 py-3 text-white dark:bg-zinc-900">
               <div className="text-xs font-extrabold tracking-wide">YOU&apos;RE ON THE CLOCK!</div>
               <div className="mt-1 text-sm font-extrabold">ROUND 1, PICK {currentPick}</div>
             </div>
@@ -841,44 +868,46 @@ export default function MockDraftClient({
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   {team?.logo_url ? (
-                    <img src={team.logo_url} alt={team.abbr} className="h-9 w-9 rounded bg-white object-contain ring-1 ring-slate-200" />
+                    <img
+                      src={team.logo_url}
+                      alt={team.abbr}
+                      className="h-9 w-9 rounded bg-white object-contain ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700"
+                    />
                   ) : (
-                    <div className="h-9 w-9 rounded bg-slate-200" />
+                    <div className="h-9 w-9 rounded bg-slate-200 dark:bg-slate-700" />
                   )}
                   <div>
-                    <div className="text-base font-bold text-slate-900 dark:text-slate-100">{team?.name ?? "—"}</div>
-                    <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">{onClockLabel}</div>
+                    <div className="text-base font-extrabold text-slate-900 dark:text-slate-100">{team?.name ?? "—"}</div>
+                    <div className="text-sm font-bold text-slate-700 dark:text-slate-300">{onClockLabel}</div>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <div className="rounded bg-slate-200 px-3 py-2 dark:bg-slate-700">
-                    <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Needs</div>
-                    <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{currentNeeds.join(", ")}</div>
+                  <div className="rounded bg-slate-200 px-3 py-2 dark:bg-slate-900/40 dark:ring-1 dark:ring-slate-700">
+                    <div className="text-[12px] font-extrabold text-slate-700 dark:text-slate-300">Needs</div>
+                    <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                      {currentNeeds.join(", ")}
+                    </div>
                   </div>
-                  <div className="rounded bg-slate-200 px-3 py-2 dark:bg-slate-700">
-                    <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Remaining</div>
-                    <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{remainingPicksForCurrentTeam}</div>
+                  <div className="rounded bg-slate-200 px-3 py-2 dark:bg-slate-900/40 dark:ring-1 dark:ring-slate-700">
+                    <div className="text-[12px] font-extrabold text-slate-700 dark:text-slate-300">Remaining</div>
+                    <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100">{remainingPicksForCurrentTeam}</div>
                   </div>
                 </div>
               </div>
 
               <div className="mt-4 border-b dark:border-slate-700">
-                <div className="inline-flex border-b-2 border-blue-600 pb-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                <div className="inline-flex border-b-2 border-blue-600 pb-2 text-sm font-extrabold text-slate-900 dark:text-slate-100">
                   Draft a Player
                 </div>
               </div>
 
               <div className="mt-4 rounded-sm border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-                <div className="text-sm font-bold text-slate-900 dark:text-slate-100">Filter Positions</div>
+                <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100">Filter Positions</div>
 
                 <div className="mt-3 grid grid-cols-12 gap-3">
                   <div className="col-span-5">
-                    <select
-                      value={pos}
-                      onChange={(e) => setPos(e.target.value)}
-                      className="w-full rounded-sm border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                    >
+                    <select value={pos} onChange={(e) => setPos(e.target.value)} className={T.select}>
                       <option value="ALL">All</option>
                       {["QB", "HB", "WR", "TE", "T", "G", "C", "ED", "DI", "LB", "CB", "S"].map((x) => (
                         <option key={x} value={x}>
@@ -889,13 +918,13 @@ export default function MockDraftClient({
                   </div>
 
                   <div className="col-span-7">
-                    <div className="flex items-center rounded-sm border border-slate-300 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800">
-                      <span className="mr-2 text-slate-400">🔍</span>
+                    <div className={T.inputWrap}>
+                      <span className="mr-2 text-slate-400 dark:text-slate-400">🔍</span>
                       <input
                         value={q}
                         onChange={(e) => setQ(e.target.value)}
                         placeholder="Search All Players..."
-                        className="w-full bg-transparent text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-500 dark:text-slate-300"
+                        className={T.input}
                       />
                     </div>
                   </div>
@@ -906,17 +935,20 @@ export default function MockDraftClient({
             {/* players list */}
             <div className="max-h-[55vh] overflow-auto">
               {availablePlayers.map((p) => (
-                <div key={p.id} className="border-t border-slate-200 px-4 py-4 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
+                <div
+                  key={p.id}
+                  className="border-t border-slate-200 px-4 py-4 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+                >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <CollegeMark name={p.school} logoUrl={p.college_logo_url} size={44} />
                       <div className="min-w-0">
-                        <div className="truncate text-base font-bold text-slate-900 dark:text-slate-100">{p.full_name}</div>
-                        <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">
-                          <span className="font-bold">{p.position}</span> &nbsp; {p.school}
+                        <div className="truncate text-base font-extrabold text-slate-900 dark:text-slate-100">{p.full_name}</div>
+                        <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                          <span className="font-extrabold">{p.position}</span> &nbsp; {p.school}
                         </div>
-                        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                          Rank <span className="font-bold text-slate-700">{p.rank_overall}</span>
+                        <div className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                          Rank <span className="font-extrabold text-slate-900 dark:text-slate-100">{p.rank_overall}</span>
                         </div>
                       </div>
                     </div>
@@ -925,7 +957,7 @@ export default function MockDraftClient({
                       type="button"
                       onClick={() => selectPlayer(p)}
                       disabled={picksLocked}
-                      className="shrink-0 rounded-sm bg-[#0b3a75] px-4 py-2 text-sm font-bold text-white hover:bg-[#0a3163] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="shrink-0 rounded-sm bg-[#0b3a75] px-4 py-2 text-sm font-extrabold text-white hover:bg-[#0a3163] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Draft
                     </button>
@@ -934,7 +966,7 @@ export default function MockDraftClient({
               ))}
 
               {availablePlayers.length === 0 && (
-                <div className="p-6 text-sm font-semibold text-slate-600 dark:text-slate-300">No players match your filter.</div>
+                <div className="p-6 text-sm font-bold text-slate-700 dark:text-slate-300">No players match your filter.</div>
               )}
             </div>
           </div>
