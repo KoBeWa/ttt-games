@@ -123,7 +123,7 @@ function CollegeMark({ name, logoUrl, size = 44 }: { name: string; logoUrl: stri
         alt={name}
         width={size}
         height={size}
-        className="rounded-full bg-white object-contain ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700"
+        className="rounded-full bg-white object-contain ring-1 ring-slate-200 dark:bg-slate-200 dark:ring-slate-700"
         style={{ width: s, height: s }}
         loading="lazy"
       />
