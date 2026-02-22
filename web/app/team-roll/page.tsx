@@ -8,13 +8,8 @@ type PickRow = {
   slot: TeamRollSlot;
   asset_type: "player" | "dst" | "coach";
   team_id: string;
-
-  // to-one embeds (NOT arrays)
   teams: { id: string; abbr: string; name: string; logo_url: string | null } | null;
-
-  // Option A: nflverse_roster_2025.id is bigint -> number
   players: { id: number; full_name: string; position: string } | null;
-
   coaches: { id: string; full_name: string } | null;
 };
 
