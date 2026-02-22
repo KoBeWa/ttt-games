@@ -13,42 +13,6 @@ type PickRow = {
   coaches: { id: string; full_name: string } | null;
 };
 
-type RawPickRow = Omit<PickRow, "teams" | "players" | "coaches"> & {
-  teams:
-    | { id: string; abbr: string; name: string; logo_url: string | null }
-    | Array<{ id: string; abbr: string; name: string; logo_url: string | null }>
-    | null;
-  players:
-    | { id: string; full_name: string; position: string }
-    | Array<{ id: string; full_name: string; position: string }>
-    | null;
-  coaches:
-    | { id: string; full_name: string }
-    | Array<{ id: string; full_name: string }>
-    | null;
-};
-
-function firstOrNull<T>(value: T | T[] | null): T | null {
-  if (!value) return null;
-  return Array.isArray(value) ? (value[0] ?? null) : value;
-}
-
-function normalizePicks(rows: RawPickRow[] | null): PickRow[] {
-  if (!rows) return [];
-  return rows.map((row) => ({
-    ...row,
-    teams: firstOrNull(row.teams),
-    players: firstOrNull(row.players),
-    coaches: firstOrNull(row.coaches),
-  }));
-}
-
-type GameStateRow = {
-  phase: "need_roll" | "need_slot" | "need_asset" | "complete";
-  current_team_id: string | null;
-  pending_slot: TeamRollSlot | null;
-};
-
 const CURRENT_SEASON = new Date().getFullYear();
 
 export default async function TeamRollPage() {
@@ -65,7 +29,8 @@ export default async function TeamRollPage() {
     .eq("season", CURRENT_SEASON)
     .maybeSingle();
 
-  let state: GameStateRow | null = null;
+  let state: { phase: "need_roll" | "need_slot" | "need_asset" | "complete"; current_team_id: string | null; pending_slot: TeamRollSlot | null } | null =
+    null;
 
   let picks: PickRow[] = [];
   let currentTeam: { id: string; abbr: string; name: string; logo_url: string | null } | null = null;
@@ -85,8 +50,8 @@ export default async function TeamRollPage() {
         .order("created_at", { ascending: true }),
     ]);
 
-    state = (stateRes as GameStateRow | null) ?? null;
-    picks = normalizePicks((picksRes as RawPickRow[] | null) ?? null);
+    state = (stateRes as typeof state) ?? null;
+    picks = (picksRes as PickRow[]) ?? [];
 
     if (state?.current_team_id) {
       const { data: t } = await supabase
