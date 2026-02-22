@@ -13,7 +13,7 @@ type PickRow = {
   coaches: { id: string; full_name: string } | null;
 };
 
-const CURRENT_SEASON = new Date().getFullYear();
+const CURRENT_SEASON = 2025;
 
 export default async function TeamRollPage() {
   const supabase = await createServerReadClient();
