@@ -2,16 +2,6 @@ begin;
 
 create extension if not exists pgcrypto;
 
--- =========================================================
--- OPTION A: Player kommt direkt aus public.nflverse_roster_2025 (id = bigint)
--- -> game_picks.player_id wird BIGINT und referenziert nflverse_roster_2025(id)
--- -> tr_pick_asset bekommt p_asset_id BIGINT und prüft Team-Match über teams.abbr
--- =========================================================
-
--- ----------------------------
--- 1) Tabellen (falls noch nicht da)
--- ----------------------------
-
 create table if not exists public.coaches (
   id uuid primary key default gen_random_uuid(),
   team_id uuid not null unique references public.teams(id) on delete cascade,
