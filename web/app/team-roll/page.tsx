@@ -83,11 +83,33 @@ export default async function TeamRollPage() {
       state = stateRes ?? null;
     }
 
+    type RawPickRow = {
+      id: string;
+      slot: TeamRollSlot;
+      asset_type: "player" | "dst" | "coach";
+      team_id: string;
+      teams: Array<{ id: string; abbr: string; name: string; logo_url: string | null }> | { id: string; abbr: string; name: string; logo_url: string | null } | null;
+      players: Array<{ id: number; full_name: string; position: string }> | { id: number; full_name: string; position: string } | null;
+      coaches: Array<{ id: string; full_name: string }> | { id: string; full_name: string } | null;
+    };
+    
     if (picksErr) {
-      // optional: console.log(picksErr)
       picks = [];
     } else {
-      picks = (picksRes ?? []) as PickRow[];
+      const raw = (picksRes ?? []) as RawPickRow[];
+    
+      // normalize: array -> first element, object -> object, null -> null
+      const normalized: PickRow[] = raw.map((r) => ({
+        id: r.id,
+        slot: r.slot,
+        asset_type: r.asset_type,
+        team_id: r.team_id,
+        teams: Array.isArray(r.teams) ? r.teams[0] ?? null : r.teams ?? null,
+        players: Array.isArray(r.players) ? r.players[0] ?? null : r.players ?? null,
+        coaches: Array.isArray(r.coaches) ? r.coaches[0] ?? null : r.coaches ?? null,
+      }));
+    
+      picks = normalized;
     }
 
     if (state?.current_team_id) {
@@ -166,12 +188,27 @@ export default async function TeamRollPage() {
   const filledSlots = new Set(picks.map((p) => p.slot));
   const freeSlots = ALL_SLOTS.filter((s) => !filledSlots.has(s));
 
+  const clientPicks = picks.map((p) => ({
+    id: p.id,
+    slot: p.slot,
+    asset_type: p.asset_type,
+    teams: p.teams
+      ? { abbr: p.teams.abbr, name: p.teams.name, logo_url: p.teams.logo_url }
+      : null,
+    players: p.players
+      ? { full_name: p.players.full_name, position: p.players.position }
+      : null,
+    coaches: p.coaches
+      ? { full_name: p.coaches.full_name }
+      : null,
+  }));
+  
   return (
     <TeamRollClient
       currentSeason={CURRENT_SEASON}
       run={run}
       state={state}
-      picks={picks}
+      picks={clientPicks}
       freeSlots={freeSlots}
       currentTeam={currentTeam}
       availableAssets={availableAssets}
