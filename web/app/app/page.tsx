@@ -37,6 +37,7 @@ export default function AppHome() {
         <Link href="/playoff-challenge" style={card}>Playoff Challenge</Link>
         <Link href="/playoff-bracket" style={card}>NFL Playoff Bracket</Link>
         <Link href="/mock-draft" style={card}>Mock Draft</Link>
+        <Link href="/team-roll" style={card}>Team Roll</Link>
       </div>
     </main>
   );

@@ -30,8 +30,6 @@ type Props = {
   freeSlots: TeamRollSlot[];
   currentTeam: { id: string; abbr: string; name: string; logo_url: string | null } | null;
   availableAssets: Array<{ id: string | null; label: string; subtitle: string; asset_type: "player" | "coach" | "dst" }>;
-  leaderboard: Array<{ runId: string; username: string; totalPoints: number; weekly: Record<number, number> }>;
-  leaderboardWeeks: number[];
 };
 
 export default function TeamRollClient({
@@ -42,8 +40,6 @@ export default function TeamRollClient({
   freeSlots,
   currentTeam,
   availableAssets,
-  leaderboard,
-  leaderboardWeeks,
 }: Props) {
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
@@ -212,38 +208,6 @@ export default function TeamRollClient({
               })}
             </div>
           </section>
-
-          {leaderboard.length > 0 && (
-            <section className="rounded-xl border p-4">
-              <h2 className="mb-3 font-semibold">Ranking (Regular Season)</h2>
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left">
-                      <th className="px-2 py-2">#</th>
-                      <th className="px-2 py-2">User</th>
-                      <th className="px-2 py-2">Gesamt</th>
-                      {leaderboardWeeks.map((w) => (
-                        <th key={w} className="px-2 py-2">W{w}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {leaderboard.map((row, idx) => (
-                      <tr key={row.runId} className="border-b">
-                        <td className="px-2 py-2">{idx + 1}</td>
-                        <td className="px-2 py-2 font-semibold">{row.username}</td>
-                        <td className="px-2 py-2">{row.totalPoints.toFixed(2)}</td>
-                        {leaderboardWeeks.map((w) => (
-                          <td key={w} className="px-2 py-2">{(row.weekly[w] ?? 0).toFixed(2)}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
 
           {state?.phase === "complete" && (
             <div className="rounded-xl border border-green-300 bg-green-50 p-4 text-green-800">Run abgeschlossen 🎉</div>
