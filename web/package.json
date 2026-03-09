@@ -12,7 +12,8 @@
     "sync:pc:roster:2025": "node scripts/sync-pc-roster-weekly-2025.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sync:nflverse:roster:2025": "node scripts/sync-nflverse-roster-2025.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

@@ -99,7 +99,7 @@ async function chunkUpsert(table, rows, onConflict, chunkSize = 2000) {
 }
 
 async function main() {
-  console.log("Sync pc_weekly_stats from nflverse stats_player_week_2025.csv (POST only)");
+  console.log("Sync pc_weekly_stats from nflverse stats_player_week_2025.csv (REG + POST)");
 
   const res = await fetch(STATS_URL);
   if (!res.ok) throw new Error(`stats csv download failed: ${res.status} ${res.statusText}`);
@@ -108,12 +108,12 @@ async function main() {
   const rows = parseCsv(csvText);
 
   const payload = rows
-    .filter((r) => String(r.season_type || "").toUpperCase() === "POST")
+        .filter((r) => ["REG", "POST"].includes(String(r.season_type || "").toUpperCase()))
     .filter((r) => r.player_id && r.season && r.week)
     .map((r) => ({
       season: Number(r.season),
       week: Number(r.week),
-      season_type: "POST",
+      season_type: String(r.season_type || "").toUpperCase(),
       player_id: r.player_id,
       team: r.team || null,
       opponent_team: r.opponent_team || null,
