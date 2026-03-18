@@ -20,16 +20,25 @@ type Game = {
   seasons?: { id: string; year: number } | null;
 };
 
+type PickRow = {
+  game_id: string;
+  picked_team_id: string;
+};
+
 type StandingRow = {
   user_id: string;
   username: string;
   total_points: number;
-  weekly: Record<string, number>; // {"1": 10, "2": 9, ...}
+  weekly: Record<string, number>;
 };
 
 function getCurrentWeekNumber(allGames: Game[]): number | null {
   const weeks = Array.from(
-    new Set(allGames.map((g) => g.weeks?.week_number).filter((x): x is number => typeof x === "number"))
+    new Set(
+      allGames
+        .map((g) => g.weeks?.week_number)
+        .filter((x): x is number => typeof x === "number")
+    )
   ).sort((a, b) => a - b);
 
   if (weeks.length === 0) return null;
@@ -38,61 +47,60 @@ function getCurrentWeekNumber(allGames: Game[]): number | null {
     const wg = allGames.filter((g) => g.weeks?.week_number === w);
     const allFinal =
       wg.length > 0 &&
-      wg.every((g) => g.winner_team_id != null || (g.status ?? "").toUpperCase() === "FINAL");
+      wg.every(
+        (g) =>
+          g.winner_team_id != null ||
+          (g.status ?? "").toUpperCase() === "FINAL"
+      );
     if (!allFinal) return w;
   }
   return weeks[weeks.length - 1];
 }
 
+const SEASON_YEAR = 2025;
+
 export default function PickemPage() {
   const supabase = createSupabaseBrowserClient();
   const router = useRouter();
 
-  // ---- Configure here ----
-  const SEASON_YEAR = 2025;
-
   const [uid, setUid] = useState<string | null>(null);
-
   const [allGames, setAllGames] = useState<Game[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
-
   const [picks, setPicks] = useState<Record<string, string>>({});
   const [standings, setStandings] = useState<StandingRow[]>([]);
-
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const weeksInSeason = useMemo(() => {
-    const weeks = Array.from(
-      new Set(allGames.map((g) => g.weeks?.week_number).filter((x): x is number => typeof x === "number"))
+    return Array.from(
+      new Set(
+        allGames
+          .map((g) => g.weeks?.week_number)
+          .filter((x): x is number => typeof x === "number")
+      )
     ).sort((a, b) => a - b);
-    return weeks;
   }, [allGames]);
 
   async function loadStandings() {
-    const { data, error } = await supabase.rpc("pickem_standings", { p_season_year: SEASON_YEAR });
-    if (error) {
-      // Wenn du die RPC noch nicht angelegt hast, siehst du das hier
-      return setError(error.message);
-    }
-    setStandings((data ?? []) as any);
+    const { data, error: rpcErr } = await supabase.rpc("pickem_standings", {
+      p_season_year: SEASON_YEAR,
+    });
+    if (rpcErr) return setError(rpcErr.message);
+    setStandings((data ?? []) as StandingRow[]);
   }
 
   async function loadAll(userId: string) {
     setError(null);
 
-    // 1) Games (alle Wochen) laden
     const { data: gamesData, error: gamesErr } = await supabase
       .from("games")
       .select(
-        `
-        id, start_time, winner_team_id, home_score, away_score, status,
-        home:home_team_id (id,name,abbr),
-        away:away_team_id (id,name,abbr),
-        weeks!inner (id, week_number),
-        seasons!inner (id, year)
-      `
+        `id, start_time, winner_team_id, home_score, away_score, status,
+         home:home_team_id (id,name,abbr),
+         away:away_team_id (id,name,abbr),
+         weeks!inner (id, week_number),
+         seasons!inner (id, year)`
       )
       .eq("seasons.year", SEASON_YEAR)
       .order("start_time", { ascending: true })
@@ -104,14 +112,10 @@ export default function PickemPage() {
     setAllGames(all);
 
     const current = getCurrentWeekNumber(all);
-    const weekToShow = selectedWeek ?? current;
-
     if (selectedWeek == null && current != null) setSelectedWeek(current);
+    const weekToShow = selectedWeek ?? current;
+    setGames(weekToShow ? all.filter((g) => g.weeks?.week_number === weekToShow) : all);
 
-    const filtered = weekToShow ? all.filter((g) => g.weeks?.week_number === weekToShow) : all;
-    setGames(filtered);
-
-    // 2) Meine Picks laden
     const { data: pickData, error: pickErr } = await supabase
       .from("pickem_picks_v2")
       .select("game_id,picked_team_id")
@@ -120,25 +124,18 @@ export default function PickemPage() {
     if (pickErr) return setError(pickErr.message);
 
     const map: Record<string, string> = {};
-    (pickData ?? []).forEach((p: any) => (map[p.game_id] = p.picked_team_id));
+    (pickData ?? []).forEach((p: PickRow) => (map[p.game_id] = p.picked_team_id));
     setPicks(map);
 
-    // 3) Standings laden (gesamt)
     await loadStandings();
   }
 
-  // Initial: auth + onboarding-check
   useEffect(() => {
     (async () => {
       setLoading(true);
-      setError(null);
-
       const { data: auth } = await supabase.auth.getUser();
       const user = auth?.user;
-      if (!user) {
-        router.push("/login");
-        return;
-      }
+      if (!user) { router.push("/login"); return; }
       setUid(user.id);
 
       const { data: prof, error: profErr } = await supabase
@@ -147,16 +144,8 @@ export default function PickemPage() {
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (profErr) {
-        setError(profErr.message);
-        setLoading(false);
-        return;
-      }
-
-      if (!prof?.username) {
-        router.push("/onboarding");
-        return;
-      }
+      if (profErr) { setError(profErr.message); setLoading(false); return; }
+      if (!prof?.username) { router.push("/onboarding"); return; }
 
       await loadAll(user.id);
       setLoading(false);
@@ -164,41 +153,31 @@ export default function PickemPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-filter when selectedWeek changes (no need to refetch games)
   useEffect(() => {
     if (!allGames.length) return;
     const weekToShow = selectedWeek ?? getCurrentWeekNumber(allGames);
-    const filtered = weekToShow ? allGames.filter((g) => g.weeks?.week_number === weekToShow) : allGames;
-    setGames(filtered);
+    setGames(weekToShow ? allGames.filter((g) => g.weeks?.week_number === weekToShow) : allGames);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedWeek]);
 
   async function setPick(game: Game, teamId: string) {
     setError(null);
     if (!uid) return setError("Nicht eingeloggt.");
-
-    const kickoff = new Date(game.start_time);
-    if (kickoff <= new Date()) {
+    if (new Date(game.start_time) <= new Date()) {
       return setError("Dieses Spiel ist bereits gelockt (Kickoff vorbei).");
     }
-
-    const { error } = await supabase
+    const { error: upsertErr } = await supabase
       .from("pickem_picks_v2")
       .upsert(
-        { user_id: uid, game_id: game.id, picked_team_id: teamId } as any,
+        { user_id: uid, game_id: game.id, picked_team_id: teamId },
         { onConflict: "user_id,game_id" }
       );
-
-    if (error) return setError(error.message);
-
+    if (upsertErr) return setError(upsertErr.message);
     setPicks((prev) => ({ ...prev, [game.id]: teamId }));
-
-    // Standings nach Pick aktualisieren (damit Total/Week sofort stimmt)
     await loadStandings();
   }
 
   function kickoffBerlin(iso: string) {
-    const d = new Date(iso);
     return new Intl.DateTimeFormat("de-DE", {
       timeZone: "Europe/Berlin",
       weekday: "short",
@@ -208,7 +187,7 @@ export default function PickemPage() {
       hour: "2-digit",
       minute: "2-digit",
       timeZoneName: "short",
-    }).format(d);
+    }).format(new Date(iso));
   }
 
   function renderScore(g: Game) {
@@ -220,23 +199,20 @@ export default function PickemPage() {
   }
 
   const standingsWeeks = useMemo(() => {
-    // Wenn deine DB Weeks 1..18 enthält, nimm die.
-    // Fallback: aus standings weekly keys ableiten.
     const fromGames = weeksInSeason;
     if (fromGames.length) return fromGames;
-
     const keys = new Set<number>();
-    standings.forEach((r) => Object.keys(r.weekly || {}).forEach((k) => keys.add(Number(k))));
-    return Array.from(keys).filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
+    standings.forEach((r) =>
+      Object.keys(r.weekly || {}).forEach((k) => keys.add(Number(k)))
+    );
+    return Array.from(keys).filter(Number.isFinite).sort((a, b) => a - b);
   }, [weeksInSeason, standings]);
 
   return (
     <main style={{ maxWidth: 1050, margin: "40px auto", fontFamily: "system-ui" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <h1 style={{ margin: 0 }}>Pick’em</h1>
-        <Link href="/app" style={{ textDecoration: "none" }}>
-          ← Dashboard
-        </Link>
+        <h1 style={{ margin: 0 }}>Pick&apos;em</h1>
+        <Link href="/app">← Dashboard</Link>
       </div>
 
       {error && (
@@ -245,7 +221,6 @@ export default function PickemPage() {
         </p>
       )}
 
-      {/* Standings */}
       {!loading && standings.length > 0 && (
         <section style={{ marginTop: 16, border: "1px solid #eee", borderRadius: 12, padding: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -257,7 +232,6 @@ export default function PickemPage() {
               Refresh
             </button>
           </div>
-
           <div style={{ overflowX: "auto", marginTop: 10 }}>
             <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 700 }}>
               <thead>
@@ -265,9 +239,7 @@ export default function PickemPage() {
                   <th style={th}>#</th>
                   <th style={th}>User</th>
                   <th style={th}>Total</th>
-                  {standingsWeeks.map((w) => (
-                    <th key={w} style={th}>W{w}</th>
-                  ))}
+                  {standingsWeeks.map((w) => <th key={w} style={th}>W{w}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -284,14 +256,9 @@ export default function PickemPage() {
               </tbody>
             </table>
           </div>
-
-          <p style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
-            Punkte = richtige Picks pro Woche. Total = Summe über die Saison.
-          </p>
         </section>
       )}
 
-      {/* Week selector */}
       {!loading && weeksInSeason.length > 0 && (
         <div style={{ display: "flex", gap: 10, alignItems: "center", margin: "16px 0 18px" }}>
           <span style={{ fontSize: 14 }}>Woche:</span>
@@ -300,13 +267,8 @@ export default function PickemPage() {
             onChange={(e) => setSelectedWeek(Number(e.target.value))}
             style={{ padding: 8, borderRadius: 8, border: "1px solid #ddd" }}
           >
-            {weeksInSeason.map((w) => (
-              <option key={w} value={w}>
-                Week {w}
-              </option>
-            ))}
+            {weeksInSeason.map((w) => <option key={w} value={w}>Week {w}</option>)}
           </select>
-
           <button
             onClick={() => setSelectedWeek(getCurrentWeekNumber(allGames))}
             style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #ddd", background: "white" }}
@@ -316,22 +278,20 @@ export default function PickemPage() {
         </div>
       )}
 
-      {/* Games */}
       {loading ? (
         <p>Lade…</p>
       ) : games.length === 0 ? (
         <div style={{ border: "1px solid #ddd", padding: 12, borderRadius: 8 }}>
-          <p>
-            <b>Noch keine Spiele in der DB.</b>
-          </p>
+          <p><b>Noch keine Spiele in der DB.</b></p>
         </div>
       ) : (
         <div style={{ display: "grid", gap: 10 }}>
           {games.map((g) => {
-            const kickoff = new Date(g.start_time);
-            const locked = kickoff <= new Date();
+            const locked = new Date(g.start_time) <= new Date();
             const picked = picks[g.id];
             const score = renderScore(g);
+            const isFinal =
+              g.winner_team_id != null || (g.status ?? "").toUpperCase() === "FINAL";
 
             return (
               <div key={g.id} style={{ border: "1px solid #eee", padding: 12, borderRadius: 8 }}>
@@ -341,38 +301,32 @@ export default function PickemPage() {
                   </div>
                   <div style={{ fontSize: 12, opacity: 0.95, fontWeight: 700 }}>{score}</div>
                 </div>
-
                 <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
-                  <button
-                    disabled={locked}
-                    onClick={() => setPick(g, g.home.id)}
-                    style={{
-                      padding: 10,
-                      border: "1px solid #ddd",
-                      borderRadius: 8,
-                      fontWeight: picked === g.home.id ? 700 : 400,
-                    }}
-                  >
-                    {g.home.abbr} – {g.home.name}
-                  </button>
-
-                  <button
-                    disabled={locked}
-                    onClick={() => setPick(g, g.away.id)}
-                    style={{
-                      padding: 10,
-                      border: "1px solid #ddd",
-                      borderRadius: 8,
-                      fontWeight: picked === g.away.id ? 700 : 400,
-                    }}
-                  >
-                    {g.away.abbr} – {g.away.name}
-                  </button>
+                  {[
+                    { team: g.home, label: `${g.home.abbr} – ${g.home.name}` },
+                    { team: g.away, label: `${g.away.abbr} – ${g.away.name}` },
+                  ].map(({ team, label }) => (
+                    <button
+                      key={team.id}
+                      disabled={locked}
+                      onClick={() => setPick(g, team.id)}
+                      style={{
+                        padding: 10,
+                        border: `1px solid ${picked === team.id ? "#2563eb" : "#ddd"}`,
+                        borderRadius: 8,
+                        fontWeight: picked === team.id ? 700 : 400,
+                        background: picked === team.id ? "#eff6ff" : "white",
+                        cursor: locked ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
-
-                {(g.winner_team_id != null || (g.status ?? "").toUpperCase() === "FINAL") && picked && (
-                  <div style={{ marginTop: 8, fontSize: 13, opacity: 0.9 }}>
-                    Dein Pick: <b>{picked === g.winner_team_id ? "✅ richtig" : "❌ falsch"}</b>
+                {isFinal && picked && (
+                  <div style={{ marginTop: 8, fontSize: 13 }}>
+                    Dein Pick:{" "}
+                    <b>{picked === g.winner_team_id ? "✅ richtig" : "❌ falsch"}</b>
                   </div>
                 )}
               </div>
@@ -391,15 +345,10 @@ const th: React.CSSProperties = {
   fontSize: 13,
   whiteSpace: "nowrap",
 };
-
 const td: React.CSSProperties = {
   padding: "8px 10px",
   borderBottom: "1px solid #f3f3f3",
   fontSize: 13,
   whiteSpace: "nowrap",
 };
-
-const tdCenter: React.CSSProperties = {
-  ...td,
-  textAlign: "center",
-};
+const tdCenter: React.CSSProperties = { ...td, textAlign: "center" };

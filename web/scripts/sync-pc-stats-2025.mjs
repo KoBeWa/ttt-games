@@ -3,18 +3,16 @@ import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
+import { parseCsv, chunkUpsert } from "./lib/csv.mjs";
 
-// ---- load web/.env.local explicitly ----
 const ENV_LOCAL = path.join(process.cwd(), ".env.local");
 if (fs.existsSync(ENV_LOCAL)) {
-  const raw = fs.readFileSync(ENV_LOCAL, "utf8");
-  for (const line of raw.split("\n")) {
+  for (const line of fs.readFileSync(ENV_LOCAL, "utf8").split("\n")) {
     const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*"?([^"]*)"?\s*$/i);
     if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
   }
 }
 
-// ---- env ----
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -27,61 +25,6 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
-// ---- tiny CSV parser (quoted commas supported) ----
-function parseCsv(text) {
-  const rows = [];
-  let i = 0;
-  let field = "";
-  let row = [];
-  let inQuotes = false;
-
-  while (i < text.length) {
-    const c = text[i];
-
-    if (c === '"') {
-      if (inQuotes && text[i + 1] === '"') {
-        field += '"';
-        i += 2;
-        continue;
-      }
-      inQuotes = !inQuotes;
-      i++;
-      continue;
-    }
-
-    if (!inQuotes && (c === "," || c === "\n" || c === "\r")) {
-      if (c === ",") {
-        row.push(field);
-        field = "";
-        i++;
-        continue;
-      }
-      row.push(field);
-      field = "";
-      if (row.length > 1 || row[0] !== "") rows.push(row);
-      row = [];
-      if (c === "\r" && text[i + 1] === "\n") i += 2;
-      else i++;
-      continue;
-    }
-
-    field += c;
-    i++;
-  }
-
-  if (field.length || row.length) {
-    row.push(field);
-    rows.push(row);
-  }
-
-  const header = rows.shift().map((h) => h.trim());
-  return rows.map((r) => {
-    const obj = {};
-    header.forEach((h, idx) => (obj[h] = (r[idx] ?? "").trim()));
-    return obj;
-  });
-}
-
 function toNum(x) {
   const n = Number(x);
   return Number.isFinite(n) ? n : null;
@@ -90,25 +33,16 @@ function toNum(x) {
 const STATS_URL =
   "https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_2025.csv";
 
-async function chunkUpsert(table, rows, onConflict, chunkSize = 2000) {
-  for (let i = 0; i < rows.length; i += chunkSize) {
-    const chunk = rows.slice(i, i + chunkSize);
-    const { error } = await supabase.from(table).upsert(chunk, { onConflict });
-    if (error) throw new Error(`${table} upsert failed: ${error.message}`);
-  }
-}
-
 async function main() {
   console.log("Sync pc_weekly_stats from nflverse stats_player_week_2025.csv (REG + POST)");
 
   const res = await fetch(STATS_URL);
   if (!res.ok) throw new Error(`stats csv download failed: ${res.status} ${res.statusText}`);
-  const csvText = await res.text();
 
-  const rows = parseCsv(csvText);
+  const rows = parseCsv(await res.text());
 
   const payload = rows
-        .filter((r) => ["REG", "POST"].includes(String(r.season_type || "").toUpperCase()))
+    .filter((r) => ["REG", "POST"].includes(String(r.season_type || "").toUpperCase()))
     .filter((r) => r.player_id && r.season && r.week)
     .map((r) => ({
       season: Number(r.season),
@@ -122,12 +56,8 @@ async function main() {
       updated_at: new Date().toISOString(),
     }));
 
-  await chunkUpsert("pc_weekly_stats", payload, "season,week,season_type,player_id", 2000);
-
+  await chunkUpsert(supabase, "pc_weekly_stats", payload, "season,week,season_type,player_id", 2000);
   console.log(`Done ✅ Upserted pc_weekly_stats: ${payload.length}`);
 }
 
-main().catch((e) => {
-  console.error("ERROR:", e.message);
-  process.exit(1);
-});
+main().catch((e) => { console.error("ERROR:", e.message); process.exit(1); });
