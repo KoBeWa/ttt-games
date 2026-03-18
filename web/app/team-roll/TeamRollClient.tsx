@@ -823,7 +823,7 @@ export default function TeamRollClient({
                   </div>
                   <button
                     className="tr-change-btn"
-                    disabled={!currentTeam || phase === "complete" || isPending}
+                    disabled={!currentTeam || isPending}
                     onClick={() => runAction(() => clearPendingSlot(run.id))}
                   >
                     ↩ Position ändern
