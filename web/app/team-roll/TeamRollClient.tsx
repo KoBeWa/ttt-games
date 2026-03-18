@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   chooseSlot,
@@ -96,6 +96,29 @@ export default function TeamRollClient({
   };
 
   const phase = state?.phase;
+
+  // Refs für auto-scroll zu den Action-Karten
+  const rollRef  = useRef<HTMLDivElement>(null);
+  const slotRef  = useRef<HTMLDivElement>(null);
+  const assetRef = useRef<HTMLDivElement>(null);
+
+  // Sobald sich phase ändert, zum passenden Block scrollen (nur Mobile)
+  useEffect(() => {
+    const isMobile = window.innerWidth < 640;
+    if (!isMobile) return;
+
+    // Kleines Delay damit React den DOM schon gerendert hat
+    const t = setTimeout(() => {
+      let target: HTMLDivElement | null = null;
+      if (phase === "need_slot")  target = slotRef.current;
+      if (phase === "need_asset") target = assetRef.current;
+      if (phase === "need_roll")  target = rollRef.current;
+
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+
+    return () => clearTimeout(t);
+  }, [phase]);
 
   return (
     <>
@@ -263,6 +286,7 @@ export default function TeamRollClient({
           border-radius: 16px;
           overflow: hidden;
           margin: 16px 0;
+          scroll-margin-top: 12px;
         }
 
         .tr-action-header {
@@ -744,7 +768,7 @@ export default function TeamRollClient({
               </div>
 
               {/* Step 1: Roll */}
-              <div className="tr-action-card">
+              <div ref={rollRef} className="tr-action-card">
                 <div className="tr-action-header">
                   <div className={`tr-step-dot ${phase === "need_roll" ? "active" : currentTeam ? "done" : "idle"}`}>
                     {currentTeam && phase !== "need_roll" ? "✓" : "1"}
@@ -781,7 +805,7 @@ export default function TeamRollClient({
               </div>
 
               {/* Step 2: Choose slot */}
-              <div className="tr-action-card">
+              <div ref={slotRef} className="tr-action-card">
                 <div className="tr-action-header">
                   <div className={`tr-step-dot ${phase === "need_slot" ? "active" : state?.pending_slot ? "done" : "idle"}`}>
                     {state?.pending_slot && phase !== "need_slot" ? "✓" : "2"}
@@ -832,7 +856,7 @@ export default function TeamRollClient({
               </div>
 
               {/* Step 3: Pick asset */}
-              <div className="tr-action-card">
+              <div ref={assetRef} className="tr-action-card">
                 <div className="tr-action-header">
                   <div className={`tr-step-dot ${phase === "need_asset" ? "active" : "idle"}`}>
                     3
