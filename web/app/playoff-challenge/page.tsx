@@ -122,10 +122,8 @@ export default function PlayoffChallengePage() {
     const [lineupRes, pointsRes, kickoffRes, eligPlayersRes, eligTeamsRes] = await Promise.all([
       supabase.from("pc_lineup_slots").select("*")
         .eq("entry_id", entryId).eq("season", SEASON).eq("round", round),
-      supabase.rpc
-        ? supabase.from("v_pc_lineup_slot_points" as any).select("slot,points,is_completed,week_number")
-            .eq("entry_id", entryId).eq("season", SEASON).eq("round", round)
-        : { data: [], error: null },
+      supabase.from("v_pc_lineup_slot_points" as any).select("slot,points,is_completed,week_number")
+        .eq("entry_id", entryId).eq("season", SEASON).eq("round", round),
       supabase.from("v_pc_slot_kickoff" as any).select("slot,kickoff,started")
         .eq("entry_id", entryId).eq("season", SEASON).eq("round", round),
       supabase.from("v_pc_eligible_players" as any).select("player_id,display_name,position,latest_team,headshot_url")
