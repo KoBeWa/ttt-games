@@ -1,5 +1,7 @@
 // web/lib/team-roll/types.ts
 
+export type AssetType = "player" | "dst" | "coach";
+
 export type TeamRollSlot =
   | "QB" | "RB1" | "RB2" | "WR1" | "WR2" | "TE" | "DST" | "COACH"
   | "BENCH1" | "BENCH2" | "BENCH3" | "BENCH4" | "BENCH5";
