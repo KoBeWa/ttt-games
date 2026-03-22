@@ -10,6 +10,7 @@ import {
   rollTeam,
 } from "@/lib/team-roll/actions";
 import type { TeamRollSlot } from "@/lib/team-roll/types";
+import Link from "next/link";
 
 type Props = {
   currentSeason: number;
@@ -39,31 +40,31 @@ type Props = {
 
 const ALL_SLOTS: TeamRollSlot[] = ["QB", "RB1", "RB2", "WR1", "WR2", "TE", "DST", "COACH"];
 
-const SLOT_META: Record<TeamRollSlot, { label: string; icon: string; color: string }> = {
-  QB:    { label: "Quarterback",   icon: "🏈", color: "#ef4444" },
-  RB1:   { label: "Running Back",  icon: "⚡", color: "#f97316" },
-  RB2:   { label: "Running Back",  icon: "⚡", color: "#f97316" },
-  WR1:   { label: "Wide Receiver", icon: "🎯", color: "#eab308" },
-  WR2:   { label: "Wide Receiver", icon: "🎯", color: "#eab308" },
-  TE:    { label: "Tight End",     icon: "💪", color: "#22c55e" },
-  DST:   { label: "Defense",       icon: "🛡️", color: "#3b82f6" },
-  COACH: { label: "Head Coach",    icon: "📋", color: "#a855f7" },
+const SLOT_META: Record<TeamRollSlot, { label: string; color: string; bg: string }> = {
+  QB:    { label: "Quarterback",   color: "#1565c0", bg: "#e3effd" },
+  RB1:   { label: "Running Back",  color: "#1b5e20", bg: "#e8f5e9" },
+  RB2:   { label: "Running Back",  color: "#1b5e20", bg: "#e8f5e9" },
+  WR1:   { label: "Wide Receiver", color: "#6a1b9a", bg: "#f3e5f5" },
+  WR2:   { label: "Wide Receiver", color: "#6a1b9a", bg: "#f3e5f5" },
+  TE:    { label: "Tight End",     color: "#e65100", bg: "#fff3e0" },
+  DST:   { label: "Defense",       color: "#b71c1c", bg: "#ffebee" },
+  COACH: { label: "Head Coach",    color: "#37474f", bg: "#eceff1" },
+};
+
+// Dark-mode slot colors (used via CSS custom properties trick)
+const SLOT_COLORS_DARK: Record<TeamRollSlot, string> = {
+  QB: "#90b8f0", RB1: "#7ec88a", RB2: "#7ec88a",
+  WR1: "#ce93d8", WR2: "#ce93d8", TE: "#ffb74d",
+  DST: "#f48fb1", COACH: "#90a4ae",
 };
 
 export default function TeamRollClient({
-  currentSeason,
-  run,
-  state,
-  picks,
-  freeSlots,
-  currentTeam,
-  availableAssets,
+  currentSeason, run, state, picks, freeSlots, currentTeam, availableAssets,
 }: Props) {
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<string>("");
   const [rolling, setRolling] = useState(false);
-  const [activeStep, setActiveStep] = useState<"roll" | "slot" | "asset">("roll");
   const router = useRouter();
 
   const picksBySlot = useMemo(() => {
@@ -74,15 +75,30 @@ export default function TeamRollClient({
 
   const progress = picks.length;
   const progressPct = (progress / 8) * 100;
+  const phase = state?.phase;
+
+  const rollRef  = useRef<HTMLDivElement>(null);
+  const slotRef  = useRef<HTMLDivElement>(null);
+  const assetRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    if (!isMobile) return;
+    const t = setTimeout(() => {
+      let target: HTMLDivElement | null = null;
+      if (phase === "need_slot")  target = slotRef.current;
+      if (phase === "need_asset") target = assetRef.current;
+      if (phase === "need_roll")  target = rollRef.current;
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+    return () => clearTimeout(t);
+  }, [phase]);
 
   const runAction = (fn: () => Promise<{ ok: boolean; error?: string }>) => {
     setMessage(null);
     startTransition(async () => {
       const res = await fn();
-      if (!res.ok) {
-        setMessage(res.error ?? "Aktion fehlgeschlagen.");
-        return;
-      }
+      if (!res.ok) { setMessage(res.error ?? "Aktion fehlgeschlagen."); return; }
       router.refresh();
     });
   };
@@ -91,633 +107,443 @@ export default function TeamRollClient({
     if (!run) return;
     setRolling(true);
     setTimeout(() => setRolling(false), 800);
-    setActiveStep("slot");
     runAction(() => rollTeam(run.id));
   };
-
-  const phase = state?.phase;
-
-  // Refs für auto-scroll zu den Action-Karten
-  const rollRef  = useRef<HTMLDivElement>(null);
-  const slotRef  = useRef<HTMLDivElement>(null);
-  const assetRef = useRef<HTMLDivElement>(null);
-
-  // Sobald sich phase ändert, zum passenden Block scrollen (nur Mobile)
-  useEffect(() => {
-    const isMobile = window.innerWidth < 640;
-    if (!isMobile) return;
-
-    // Kleines Delay damit React den DOM schon gerendert hat
-    const t = setTimeout(() => {
-      let target: HTMLDivElement | null = null;
-      if (phase === "need_slot")  target = slotRef.current;
-      if (phase === "need_asset") target = assetRef.current;
-      if (phase === "need_roll")  target = rollRef.current;
-
-      target?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 120);
-
-    return () => clearTimeout(t);
-  }, [phase]);
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap');
 
+        /* ── Design tokens: Desktop always light ── */
         .tr-root {
+          --tr-bg:        #f8f7f4;
+          --tr-surface:   #ffffff;
+          --tr-surface2:  #f1f0ec;
+          --tr-border:    rgba(0,0,0,0.08);
+          --tr-border2:   rgba(0,0,0,0.14);
+          --tr-text1:     #111110;
+          --tr-text2:     #44433f;
+          --tr-text3:     #888780;
+          --tr-navy:      #0b3a75;
+          --tr-navy-lt:   #e3effd;
+          --tr-navy-tx:   #0d47a1;
+          --tr-green:     #1b5e20;
+          --tr-green-lt:  #e8f5e9;
+          --tr-red:       #b71c1c;
+          --tr-red-lt:    #ffebee;
+          --tr-amber:     #e65100;
+          --tr-amber-lt:  #fff3e0;
+
+          font-family: 'DM Sans', system-ui, sans-serif;
+          background: var(--tr-bg);
+          color: var(--tr-text1);
           min-height: 100vh;
-          background: #0a0a0f;
-          color: #f0f0f5;
-          font-family: 'Inter', sans-serif;
-          padding-bottom: 40px;
         }
 
-        .tr-header {
-          background: linear-gradient(180deg, #111118 0%, #0a0a0f 100%);
-          border-bottom: 1px solid #1e1e2e;
-          padding: 16px 20px 14px;
-          position: sticky;
-          top: 0;
-          z-index: 50;
+        /* ── Mobile dark mode ── */
+        @media (max-width: 767px) and (prefers-color-scheme: dark) {
+          .tr-root {
+            --tr-bg:        #161b27;
+            --tr-surface:   #1e2535;
+            --tr-surface2:  #242c3d;
+            --tr-border:    rgba(255,255,255,0.07);
+            --tr-border2:   rgba(255,255,255,0.13);
+            --tr-text1:     #ecedf0;
+            --tr-text2:     #9aa3b8;
+            --tr-text3:     #606880;
+            --tr-navy:      #2255a8;
+            --tr-navy-lt:   #1a2b4a;
+            --tr-navy-tx:   #90b8f0;
+            --tr-green:     #7ec88a;
+            --tr-green-lt:  #1a2d1e;
+            --tr-red:       #f48fb1;
+            --tr-red-lt:    #2d1a1a;
+            --tr-amber:     #ffb74d;
+            --tr-amber-lt:  #2d2010;
+          }
         }
 
-        .tr-title {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 28px;
-          letter-spacing: 2px;
-          color: #fff;
-          line-height: 1;
-          margin: 0;
+        /* ── Nav ── */
+        .tr-nav {
+          position: sticky; top: 0; z-index: 50;
+          background: var(--tr-surface);
+          border-bottom: 1px solid var(--tr-border);
+          padding: 10px 20px;
+          display: flex; align-items: center; justify-content: space-between; gap: 12px;
         }
+        .tr-nav-left { display: flex; align-items: center; gap: 10px; }
+        .tr-back { font-size: 13px; color: var(--tr-text3); text-decoration: none; transition: color .15s; }
+        .tr-back:hover { color: var(--tr-text1); }
+        .tr-nav-divider { width: 1px; height: 20px; background: var(--tr-border); }
+        .tr-nav-title { font-size: 17px; font-weight: 700; color: var(--tr-text1); }
+        .tr-nav-sub   { font-size: 11px; color: var(--tr-text3); margin-top: 1px; }
 
-        .tr-season {
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          color: #ef4444;
-          margin-top: 2px;
+        /* Progress pill */
+        .tr-progress-pill {
+          display: flex; flex-direction: column; align-items: center;
+          background: var(--tr-surface2); border-radius: 10px;
+          padding: 4px 12px; min-width: 52px;
         }
-
-        .tr-progress-bar {
-          height: 3px;
-          background: #1e1e2e;
-          border-radius: 2px;
-          overflow: hidden;
-          margin-top: 12px;
+        .tr-progress-val {
+          font-size: 15px; font-weight: 700; color: var(--tr-text1); line-height: 1;
+          font-family: 'DM Mono', monospace;
         }
+        .tr-progress-val.done { color: var(--tr-green); }
+        .tr-progress-lbl { font-size: 9px; color: var(--tr-text3); letter-spacing: .5px; margin-top: 2px; text-transform: uppercase; }
 
-        .tr-progress-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #ef4444, #f97316);
-          border-radius: 2px;
-          transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .tr-progress-label {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-top: 6px;
-          font-size: 11px;
-          color: #555570;
-          font-weight: 600;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-        }
-
-        .tr-body {
-          max-width: 480px;
-          margin: 0 auto;
-          padding: 0 16px;
-        }
-
-        /* Error */
+        /* ── Error ── */
         .tr-error {
-          margin: 12px 0;
-          background: #2d0f0f;
-          border: 1px solid #ef444430;
-          border-radius: 10px;
-          padding: 12px 14px;
-          font-size: 13px;
-          color: #fca5a5;
+          margin: 8px 16px;
+          background: var(--tr-red-lt);
+          border: 1px solid rgba(183,28,28,.2);
+          border-radius: 9px; padding: 10px 14px;
+          font-size: 13px; color: var(--tr-red);
         }
 
-        /* Lineup grid */
+        /* ── Body ── */
+        .tr-body {
+          max-width: 560px;
+          margin: 0 auto;
+          padding: 16px 12px 40px;
+        }
+        @media (min-width: 768px) {
+          .tr-body { padding: 24px 24px 60px; }
+        }
+
+        /* ── Progress bar strip ── */
+        .tr-prog-bar {
+          height: 4px; background: var(--tr-border); border-radius: 2px;
+          overflow: hidden; margin-bottom: 20px;
+        }
+        .tr-prog-fill {
+          height: 100%; background: var(--tr-navy);
+          border-radius: 2px; transition: width .5s cubic-bezier(.4,0,.2,1);
+        }
+        .tr-prog-fill.done { background: var(--tr-green); }
+
+        /* ── Lineup grid ── */
         .tr-lineup {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 8px;
-          padding: 20px 0 8px;
+          gap: 6px;
+          margin-bottom: 16px;
+        }
+        @media (min-width: 480px) {
+          .tr-lineup { grid-template-columns: repeat(4, 1fr); gap: 6px; }
         }
 
         .tr-slot {
-          background: #111118;
-          border: 1px solid #1e1e2e;
-          border-radius: 12px;
-          padding: 12px;
-          position: relative;
-          overflow: hidden;
-          transition: border-color 0.2s;
+          background: var(--tr-surface);
+          border: 1px solid var(--tr-border);
+          border-radius: 12px; padding: 10px;
+          position: relative; overflow: hidden;
+          min-height: 78px;
+          transition: border-color .15s;
         }
-
-        .tr-slot.filled {
-          border-color: #2a2a3e;
-          background: #13131f;
-        }
-
-        .tr-slot.active-pick {
-          border-color: #ef4444;
-          box-shadow: 0 0 0 1px #ef444430;
+        .tr-slot.filled  { border-color: var(--tr-border2); }
+        .tr-slot.pending { border-color: var(--tr-navy); box-shadow: 0 0 0 1px var(--tr-navy-lt); }
+        .tr-slot.empty-slot {
+          background: var(--tr-surface2);
+          border-style: dashed;
         }
 
         .tr-slot-accent {
-          position: absolute;
-          top: 0; left: 0;
-          width: 3px;
-          height: 100%;
+          position: absolute; top: 0; left: 0;
+          width: 3px; height: 100%;
           border-radius: 12px 0 0 12px;
         }
 
         .tr-slot-tag {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 13px;
-          letter-spacing: 1.5px;
-          color: #555570;
-          margin-bottom: 4px;
+          font-size: 10px; font-weight: 700;
+          color: var(--tr-text3); letter-spacing: .5px;
+          text-transform: uppercase; margin-bottom: 4px;
+          padding-left: 7px;
         }
-
+        .tr-slot-content { padding-left: 7px; }
         .tr-slot-name {
-          font-size: 13px;
-          font-weight: 600;
-          color: #f0f0f5;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          font-size: 12px; font-weight: 600;
+          color: var(--tr-text1);
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-
         .tr-slot-sub {
-          font-size: 11px;
-          color: #555570;
-          margin-top: 2px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
+          font-size: 10px; color: var(--tr-text3);
+          margin-top: 2px; display: flex; align-items: center; gap: 4px;
+          font-family: 'DM Mono', monospace;
         }
-
         .tr-slot-logo {
-          width: 20px;
-          height: 20px;
-          object-fit: contain;
-          opacity: 0.8;
+          width: 16px; height: 16px; object-fit: contain; opacity: .8;
         }
-
         .tr-slot-empty {
-          font-size: 12px;
-          color: #2a2a3e;
-          font-weight: 500;
+          font-size: 11px; color: var(--tr-text3); padding-left: 7px; margin-top: 2px;
         }
 
-        /* Action card */
-        .tr-action-card {
-          background: #111118;
-          border: 1px solid #1e1e2e;
-          border-radius: 16px;
+        /* ── Action cards ── */
+        .tr-card {
+          background: var(--tr-surface);
+          border: 1px solid var(--tr-border);
+          border-radius: 14px;
           overflow: hidden;
-          margin: 16px 0;
+          margin-bottom: 10px;
           scroll-margin-top: 12px;
         }
 
-        .tr-action-header {
-          padding: 14px 16px;
-          border-bottom: 1px solid #1e1e2e;
-          display: flex;
-          align-items: center;
-          gap: 10px;
+        .tr-card-header {
+          padding: 12px 16px;
+          border-bottom: 1px solid var(--tr-border);
+          display: flex; align-items: center; gap: 10px;
         }
 
         .tr-step-dot {
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 11px;
-          font-weight: 700;
-          flex-shrink: 0;
+          width: 24px; height: 24px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 11px; font-weight: 700; flex-shrink: 0;
+          transition: all .2s;
         }
+        .tr-step-dot.active  { background: var(--tr-navy); color: #fff; }
+        .tr-step-dot.done    { background: var(--tr-green-lt); color: var(--tr-green); }
+        .tr-step-dot.idle    { background: var(--tr-surface2); color: var(--tr-text3); }
 
-        .tr-step-dot.active {
-          background: #ef4444;
-          color: #fff;
+        .tr-card-title {
+          font-size: 14px; font-weight: 700; color: var(--tr-text1);
         }
+        .tr-card-title.muted { color: var(--tr-text3); }
 
-        .tr-step-dot.done {
-          background: #1e3a1e;
-          color: #22c55e;
-        }
+        .tr-card-body { padding: 14px 16px; }
 
-        .tr-step-dot.idle {
-          background: #1e1e2e;
-          color: #555570;
-        }
-
-        .tr-action-title {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 18px;
-          letter-spacing: 1.5px;
-          color: #fff;
-        }
-
-        .tr-action-body {
-          padding: 16px;
-        }
-
-        /* Team reveal */
+        /* ── Team reveal ── */
         .tr-team-reveal {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          background: #0d0d18;
-          border: 1px solid #2a2a3e;
-          border-radius: 12px;
-          padding: 14px 16px;
-          margin-bottom: 16px;
+          display: flex; align-items: center; gap: 14px;
+          background: var(--tr-navy-lt);
+          border: 1px solid rgba(11,58,117,.12);
+          border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;
         }
-
         .tr-team-logo {
-          width: 52px;
-          height: 52px;
-          object-fit: contain;
-          filter: drop-shadow(0 0 12px rgba(239,68,68,0.3));
+          width: 52px; height: 52px; object-fit: contain; flex-shrink: 0;
         }
-
         .tr-team-logo-placeholder {
-          width: 52px;
-          height: 52px;
-          background: #1e1e2e;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 18px;
+          width: 52px; height: 52px;
+          background: var(--tr-surface2); border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 22px; flex-shrink: 0;
         }
-
-        .tr-team-name {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 22px;
-          letter-spacing: 1px;
-          color: #fff;
-          line-height: 1.1;
-        }
-
         .tr-team-abbr {
-          font-size: 12px;
-          color: #ef4444;
-          font-weight: 700;
-          letter-spacing: 2px;
-          text-transform: uppercase;
+          font-size: 11px; font-weight: 700; letter-spacing: 2px;
+          color: var(--tr-navy-tx); text-transform: uppercase;
+          font-family: 'DM Mono', monospace;
         }
-
-        /* Roll button */
-        .tr-roll-btn {
-          width: 100%;
-          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-          color: #fff;
-          border: none;
-          border-radius: 12px;
-          padding: 16px;
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 22px;
-          letter-spacing: 3px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          transition: opacity 0.2s, transform 0.1s;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .tr-roll-btn:disabled {
-          opacity: 0.4;
-          cursor: not-allowed;
-        }
-
-        .tr-roll-btn:not(:disabled):active {
-          transform: scale(0.98);
-        }
-
-        @keyframes dice-spin {
-          0%   { transform: rotate(0deg) scale(1); }
-          25%  { transform: rotate(15deg) scale(1.2); }
-          50%  { transform: rotate(-10deg) scale(0.9); }
-          75%  { transform: rotate(5deg) scale(1.1); }
-          100% { transform: rotate(0deg) scale(1); }
-        }
-
-        .rolling { animation: dice-spin 0.8s ease-in-out; }
-
-        /* Slot grid */
-        .tr-slots-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 8px;
-        }
-
-        .tr-slot-btn {
-          background: #0d0d18;
-          border: 1px solid #2a2a3e;
-          border-radius: 10px;
-          padding: 12px 10px;
-          cursor: pointer;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 4px;
-          transition: all 0.15s;
-          color: #f0f0f5;
-        }
-
-        .tr-slot-btn:hover:not(:disabled) {
-          border-color: #ef4444;
-          background: #1a0d0d;
-        }
-
-        .tr-slot-btn:disabled {
-          opacity: 0.3;
-          cursor: not-allowed;
-        }
-
-        .tr-slot-btn-icon {
-          font-size: 20px;
-        }
-
-        .tr-slot-btn-name {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 16px;
-          letter-spacing: 1.5px;
-        }
-
-        .tr-slot-btn-label {
-          font-size: 10px;
-          color: #555570;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-        }
-
-        /* Change slot */
-        .tr-change-btn {
-          width: 100%;
-          margin-top: 10px;
-          background: transparent;
-          border: 1px solid #2a2a3e;
-          border-radius: 10px;
-          padding: 10px;
-          color: #555570;
-          font-size: 13px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.15s;
-        }
-
-        .tr-change-btn:hover:not(:disabled) {
-          border-color: #555570;
-          color: #f0f0f5;
-        }
-
-        .tr-change-btn:disabled {
-          opacity: 0.3;
-          cursor: not-allowed;
-        }
-
-        /* Asset picker */
-        .tr-asset-list {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          max-height: 300px;
-          overflow-y: auto;
-        }
-
-        .tr-asset-item {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: #0d0d18;
-          border: 1px solid #2a2a3e;
-          border-radius: 10px;
-          padding: 12px 14px;
-          cursor: pointer;
-          transition: all 0.15s;
-        }
-
-        .tr-asset-item:hover {
-          border-color: #ef4444;
-          background: #1a0d0d;
-        }
-
-        .tr-asset-item.selected {
-          border-color: #ef4444;
-          background: #1a0d0d;
-          box-shadow: 0 0 0 1px #ef444430;
-        }
-
-        .tr-asset-name {
-          font-weight: 600;
-          font-size: 14px;
-          color: #f0f0f5;
-        }
-
-        .tr-asset-sub {
-          font-size: 11px;
-          color: #555570;
+        .tr-team-name {
+          font-size: 18px; font-weight: 700; color: var(--tr-text1); line-height: 1.2;
           margin-top: 2px;
         }
 
-        .tr-asset-radio {
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          border: 2px solid #2a2a3e;
-          flex-shrink: 0;
-          transition: all 0.15s;
+        /* ── Roll button ── */
+        .tr-roll-btn {
+          width: 100%;
+          background: var(--tr-navy); color: #fff;
+          border: none; border-radius: 12px; padding: 14px 20px;
+          font-size: 15px; font-weight: 700;
+          cursor: pointer; font-family: inherit;
+          display: flex; align-items: center; justify-content: center; gap: 10px;
+          transition: opacity .15s, transform .1s;
+        }
+        .tr-roll-btn:not(:disabled):hover  { opacity: .9; }
+        .tr-roll-btn:not(:disabled):active { transform: scale(.98); }
+        .tr-roll-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+        @keyframes tr-dice {
+          0%   { transform: rotate(0deg) scale(1); }
+          25%  { transform: rotate(20deg) scale(1.3); }
+          50%  { transform: rotate(-12deg) scale(.9); }
+          75%  { transform: rotate(6deg) scale(1.1); }
+          100% { transform: rotate(0deg) scale(1); }
+        }
+        .tr-dice-rolling { animation: tr-dice .8s ease-in-out; display: inline-block; }
+
+        /* ── Slot buttons grid ── */
+        .tr-slots-grid {
+          display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
         }
 
-        .tr-asset-radio.checked {
-          border-color: #ef4444;
-          background: #ef4444;
+        .tr-slot-btn {
+          background: var(--tr-surface2);
+          border: 1.5px solid var(--tr-border);
+          border-radius: 10px; padding: 12px 10px;
+          cursor: pointer; font-family: inherit;
+          display: flex; flex-direction: column; align-items: center; gap: 3px;
+          transition: all .15s;
         }
+        .tr-slot-btn:hover:not(:disabled) {
+          border-color: var(--tr-navy);
+          background: var(--tr-navy-lt);
+        }
+        .tr-slot-btn.selected {
+          border-color: var(--tr-navy);
+          background: var(--tr-navy-lt);
+        }
+        .tr-slot-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+        .tr-slot-btn-pos {
+          font-size: 10px; font-weight: 700; padding: 2px 7px;
+          border-radius: 5px; color: #fff; width: fit-content;
+        }
+        .tr-slot-btn-label {
+          font-size: 10px; color: var(--tr-text3); text-transform: uppercase; letter-spacing: .5px;
+        }
+
+        /* ── Secondary button ── */
+        .tr-ghost-btn {
+          width: 100%; margin-top: 8px;
+          background: none; border: 1px solid var(--tr-border2);
+          border-radius: 10px; padding: 10px;
+          color: var(--tr-text3); font-size: 13px; font-weight: 500;
+          cursor: pointer; font-family: inherit; transition: all .15s;
+        }
+        .tr-ghost-btn:hover:not(:disabled) { border-color: var(--tr-text3); color: var(--tr-text1); }
+        .tr-ghost-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+        /* ── Asset list ── */
+        .tr-asset-list {
+          display: flex; flex-direction: column; gap: 5px;
+          max-height: 280px; overflow-y: auto;
+        }
+        .tr-asset-list::-webkit-scrollbar { width: 4px; }
+        .tr-asset-list::-webkit-scrollbar-thumb { background: var(--tr-border2); border-radius: 2px; }
+
+        .tr-asset-item {
+          display: flex; align-items: center; justify-content: space-between;
+          background: var(--tr-surface2); border: 1px solid var(--tr-border);
+          border-radius: 10px; padding: 11px 13px;
+          cursor: pointer; transition: all .15s;
+        }
+        .tr-asset-item:hover   { border-color: var(--tr-navy); background: var(--tr-navy-lt); }
+        .tr-asset-item.selected {
+          border-color: var(--tr-navy); background: var(--tr-navy-lt);
+          box-shadow: 0 0 0 1px var(--tr-navy-lt);
+        }
+        .tr-asset-name { font-weight: 600; font-size: 13px; color: var(--tr-text1); }
+        .tr-asset-sub  { font-size: 11px; color: var(--tr-text3); margin-top: 2px; }
+        .tr-asset-radio {
+          width: 18px; height: 18px; border-radius: 50%;
+          border: 2px solid var(--tr-border2); flex-shrink: 0; transition: all .15s;
+        }
+        .tr-asset-radio.checked { border-color: var(--tr-navy); background: var(--tr-navy); }
 
         .tr-confirm-btn {
-          width: 100%;
-          margin-top: 12px;
-          background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-          color: #fff;
-          border: none;
-          border-radius: 12px;
-          padding: 14px;
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 20px;
-          letter-spacing: 2px;
-          cursor: pointer;
-          transition: opacity 0.2s;
+          width: 100%; margin-top: 12px;
+          background: var(--tr-green); color: #fff;
+          border: none; border-radius: 12px; padding: 13px;
+          font-size: 14px; font-weight: 700;
+          cursor: pointer; font-family: inherit; transition: opacity .15s;
         }
+        .tr-confirm-btn:disabled { opacity: .35; cursor: not-allowed; }
 
-        .tr-confirm-btn:disabled {
-          opacity: 0.3;
-          cursor: not-allowed;
-        }
-
-        /* Complete */
-        .tr-complete {
-          text-align: center;
-          padding: 32px 20px;
-        }
-
-        .tr-complete-icon {
-          font-size: 56px;
-          margin-bottom: 12px;
-        }
-
-        .tr-complete-title {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 36px;
-          letter-spacing: 3px;
-          color: #22c55e;
-          margin-bottom: 8px;
-        }
-
-        .tr-complete-sub {
-          font-size: 14px;
-          color: #555570;
-        }
-
-        /* Start card */
-        .tr-start-card {
-          text-align: center;
-          padding: 40px 20px;
-        }
-
-        .tr-start-icon {
-          font-size: 48px;
-          margin-bottom: 16px;
-        }
-
-        .tr-start-title {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 28px;
-          letter-spacing: 2px;
-          color: #fff;
-          margin-bottom: 8px;
-        }
-
-        .tr-start-sub {
-          font-size: 13px;
-          color: #555570;
-          margin-bottom: 24px;
-          line-height: 1.5;
-        }
-
-        .tr-start-btn {
-          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-          color: #fff;
-          border: none;
-          border-radius: 12px;
-          padding: 14px 32px;
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 20px;
-          letter-spacing: 2px;
-          cursor: pointer;
-          transition: opacity 0.2s;
-        }
-
-        .tr-start-btn:disabled {
-          opacity: 0.4;
-          cursor: not-allowed;
-        }
-
-        /* Pending slot badge */
+        /* ── Pending slot badge ── */
         .tr-pending-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          background: #1a0d0d;
-          border: 1px solid #ef444440;
-          border-radius: 20px;
-          padding: 4px 10px;
-          font-size: 12px;
-          font-weight: 600;
-          color: #ef4444;
-          margin-bottom: 12px;
+          display: inline-flex; align-items: center; gap: 6px;
+          background: var(--tr-navy-lt);
+          border: 1px solid rgba(11,58,117,.15);
+          border-radius: 20px; padding: 4px 10px;
+          font-size: 12px; font-weight: 600; color: var(--tr-navy-tx);
+          margin-bottom: 10px;
         }
 
-        @media (min-width: 640px) {
-          .tr-body { padding: 0 24px; }
-          .tr-title { font-size: 36px; }
+        /* ── Start card ── */
+        .tr-start {
+          text-align: center; padding: 44px 24px;
+        }
+        .tr-start-icon { font-size: 52px; margin-bottom: 14px; }
+        .tr-start-title {
+          font-size: 22px; font-weight: 700; color: var(--tr-text1); margin-bottom: 8px;
+        }
+        .tr-start-sub {
+          font-size: 13px; color: var(--tr-text3); margin-bottom: 24px;
+          line-height: 1.6; max-width: 300px; margin-left: auto; margin-right: auto;
+        }
+        .tr-start-btn {
+          background: var(--tr-navy); color: #fff;
+          border: none; border-radius: 12px; padding: 13px 36px;
+          font-size: 15px; font-weight: 700; cursor: pointer;
+          font-family: inherit; transition: opacity .15s;
+        }
+        .tr-start-btn:hover { opacity: .9; }
+        .tr-start-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+        /* ── Complete card ── */
+        .tr-complete {
+          text-align: center; padding: 36px 24px 28px;
+        }
+        .tr-complete-icon { font-size: 52px; margin-bottom: 12px; }
+        .tr-complete-title {
+          font-size: 22px; font-weight: 700; color: var(--tr-green); margin-bottom: 6px;
+        }
+        .tr-complete-sub { font-size: 13px; color: var(--tr-text3); }
+
+        /* Skeleton */
+        @keyframes tr-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        .tr-skeleton {
+          background: var(--tr-surface2); border-radius: 12px;
+          animation: tr-pulse 1.4s ease-in-out infinite;
         }
       `}</style>
 
       <div className="tr-root">
-        {/* Header */}
-        <div className="tr-header">
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        {/* ── Nav ── */}
+        <nav className="tr-nav">
+          <div className="tr-nav-left">
+            <Link href="/app" className="tr-back">← zurück</Link>
+            <div className="tr-nav-divider" />
             <div>
-              <h1 className="tr-title">Team Roll</h1>
-              <div className="tr-season">Season {currentSeason}</div>
+              <div className="tr-nav-title">Team Roll</div>
+              <div className="tr-nav-sub">Season {currentSeason} · Draft</div>
             </div>
-            {run && (
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, color: "#f0f0f5", lineHeight: 1 }}>
-                  {progress}<span style={{ fontSize: 16, color: "#555570" }}>/8</span>
-                </div>
-                <div style={{ fontSize: 11, color: "#555570", letterSpacing: 1, textTransform: "uppercase" }}>Slots</div>
-              </div>
-            )}
           </div>
           {run && (
-            <>
-              <div className="tr-progress-bar">
-                <div className="tr-progress-fill" style={{ width: `${progressPct}%` }} />
-              </div>
-              <div className="tr-progress-label">
-                <span>Fortschritt</span>
-                <span style={{ color: progress === 8 ? "#22c55e" : "#555570" }}>
-                  {progress === 8 ? "Abgeschlossen ✓" : `${8 - progress} verbleibend`}
-                </span>
-              </div>
-            </>
+            <div className="tr-progress-pill">
+              <span className={`tr-progress-val ${progress === 8 ? "done" : ""}`}>
+                {progress}<span style={{ fontSize: 11, fontWeight: 400, color: "var(--tr-text3)" }}>/8</span>
+              </span>
+              <span className="tr-progress-lbl">Slots</span>
+            </div>
           )}
-        </div>
+        </nav>
+
+        {/* ── Error ── */}
+        {message && <div className="tr-error">⚠ {message}</div>}
 
         <div className="tr-body">
-          {/* Error */}
-          {message && <div className="tr-error">⚠️ {message}</div>}
 
-          {/* No run yet */}
+          {/* Progress bar */}
+          {run && (
+            <div className="tr-prog-bar">
+              <div
+                className={`tr-prog-fill ${progress === 8 ? "done" : ""}`}
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          )}
+
+          {/* ── No run yet ── */}
           {!run && (
-            <div className="tr-action-card" style={{ marginTop: 24 }}>
-              <div className="tr-start-card">
+            <div className="tr-card">
+              <div className="tr-start">
                 <div className="tr-start-icon">🎲</div>
                 <div className="tr-start-title">Draft starten</div>
                 <p className="tr-start-sub">
-                  Würfle 8 zufällige NFL-Teams und baue dein Ultimate Fantasy Lineup.
+                  Würfle 8 zufällige NFL-Teams und baue dein Ultimate Fantasy Lineup aus deren Spielern.
                 </p>
                 <button
                   className="tr-start-btn"
                   onClick={() => runAction(() => createRun(currentSeason))}
                   disabled={isPending}
                 >
-                  {isPending ? "..." : "Los geht's"}
+                  {isPending ? "…" : "Los geht's"}
                 </button>
               </div>
             </div>
           )}
 
-          {/* Active run */}
+          {/* ── Active run ── */}
           {run && phase !== "complete" && (
             <>
               {/* Lineup overview */}
@@ -730,63 +556,52 @@ export default function TeamRollClient({
                   return (
                     <div
                       key={slot}
-                      className={`tr-slot ${pick ? "filled" : ""} ${isCurrentSlot ? "active-pick" : ""}`}
+                      className={`tr-slot ${pick ? "filled" : "empty-slot"} ${isCurrentSlot ? "pending" : ""}`}
                     >
                       <div
                         className="tr-slot-accent"
-                        style={{ background: pick ? meta.color : "#1e1e2e" }}
+                        style={{ background: pick ? meta.color : "var(--tr-border)" }}
                       />
-                      <div style={{ paddingLeft: 8 }}>
-                        <div className="tr-slot-tag">{slot}</div>
-                        {pick ? (
-                          <>
-                            <div className="tr-slot-name">
-                              {pick.players?.full_name ??
-                                pick.coaches?.full_name ??
-                                (pick.teams ? `${pick.teams.abbr} DST` : "–")}
-                            </div>
-                            <div className="tr-slot-sub">
-                              {pick.teams?.logo_url && (
-                                <img
-                                  src={pick.teams.logo_url}
-                                  alt={pick.teams.abbr}
-                                  className="tr-slot-logo"
-                                />
-                              )}
-                              <span>{pick.teams?.abbr}</span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="tr-slot-empty">
-                            {isCurrentSlot ? "← Jetzt wählen" : "Offen"}
+                      <div className="tr-slot-tag">{slot}</div>
+                      {pick ? (
+                        <div className="tr-slot-content">
+                          <div className="tr-slot-name">
+                            {pick.players?.full_name ??
+                              pick.coaches?.full_name ??
+                              (pick.teams ? `${pick.teams.abbr} DST` : "–")}
                           </div>
-                        )}
-                      </div>
+                          <div className="tr-slot-sub">
+                            {pick.teams?.logo_url && (
+                              <img src={pick.teams.logo_url} alt={pick.teams.abbr} className="tr-slot-logo" />
+                            )}
+                            <span>{pick.teams?.abbr}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="tr-slot-empty">
+                          {isCurrentSlot ? "← Wählen" : "Offen"}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
 
               {/* Step 1: Roll */}
-              <div ref={rollRef} className="tr-action-card">
-                <div className="tr-action-header">
+              <div ref={rollRef} className="tr-card">
+                <div className="tr-card-header">
                   <div className={`tr-step-dot ${phase === "need_roll" ? "active" : currentTeam ? "done" : "idle"}`}>
                     {currentTeam && phase !== "need_roll" ? "✓" : "1"}
                   </div>
-                  <div className="tr-action-title">Team würfeln</div>
+                  <div className={`tr-card-title ${phase === "need_roll" ? "" : "muted"}`}>Team würfeln</div>
                 </div>
-                <div className="tr-action-body">
+                <div className="tr-card-body">
                   {currentTeam && (
                     <div className="tr-team-reveal">
-                      {currentTeam.logo_url ? (
-                        <img
-                          src={currentTeam.logo_url}
-                          alt={currentTeam.name}
-                          className="tr-team-logo"
-                        />
-                      ) : (
-                        <div className="tr-team-logo-placeholder">🏈</div>
-                      )}
+                      {currentTeam.logo_url
+                        ? <img src={currentTeam.logo_url} alt={currentTeam.name} className="tr-team-logo" />
+                        : <div className="tr-team-logo-placeholder">🏈</div>
+                      }
                       <div>
                         <div className="tr-team-abbr">{currentTeam.abbr}</div>
                         <div className="tr-team-name">{currentTeam.name}</div>
@@ -798,45 +613,40 @@ export default function TeamRollClient({
                     onClick={handleRoll}
                     disabled={phase !== "need_roll" || isPending}
                   >
-                    <span className={rolling ? "rolling" : ""} style={{ fontSize: 24 }}>🎲</span>
-                    <span>{isPending && phase === "need_roll" ? "Würfeln..." : "Team würfeln"}</span>
+                    <span className={rolling ? "tr-dice-rolling" : ""} style={{ fontSize: 20 }}>🎲</span>
+                    {isPending && phase === "need_roll" ? "Würfeln…" : "Team würfeln"}
                   </button>
                 </div>
               </div>
 
               {/* Step 2: Choose slot */}
-              <div ref={slotRef} className="tr-action-card">
-                <div className="tr-action-header">
+              <div ref={slotRef} className="tr-card">
+                <div className="tr-card-header">
                   <div className={`tr-step-dot ${phase === "need_slot" ? "active" : state?.pending_slot ? "done" : "idle"}`}>
                     {state?.pending_slot && phase !== "need_slot" ? "✓" : "2"}
                   </div>
-                  <div className="tr-action-title">Position wählen</div>
+                  <div className={`tr-card-title ${phase === "need_slot" ? "" : "muted"}`}>Position wählen</div>
                 </div>
-                <div className="tr-action-body">
+                <div className="tr-card-body">
                   {state?.pending_slot && (
                     <div className="tr-pending-badge">
-                      {SLOT_META[state.pending_slot].icon} {state.pending_slot} gewählt
+                      ✓ {state.pending_slot} — {SLOT_META[state.pending_slot].label}
                     </div>
                   )}
                   <div className="tr-slots-grid">
                     {freeSlots.map((slot) => {
                       const meta = SLOT_META[slot];
+                      const isSelected = state?.pending_slot === slot;
                       return (
                         <button
                           key={slot}
-                          className="tr-slot-btn"
+                          className={`tr-slot-btn ${isSelected ? "selected" : ""}`}
                           disabled={phase !== "need_slot" || isPending}
                           onClick={() => runAction(() => chooseSlot(run.id, slot))}
-                          style={
-                            state?.pending_slot === slot
-                              ? { borderColor: meta.color, background: "#0d0d18" }
-                              : {}
-                          }
                         >
-                          <span className="tr-slot-btn-icon">{meta.icon}</span>
                           <span
-                            className="tr-slot-btn-name"
-                            style={{ color: meta.color }}
+                            className="tr-slot-btn-pos"
+                            style={{ background: meta.color }}
                           >
                             {slot}
                           </span>
@@ -846,36 +656,34 @@ export default function TeamRollClient({
                     })}
                   </div>
                   <button
-                    className="tr-change-btn"
+                    className="tr-ghost-btn"
                     disabled={!currentTeam || isPending}
                     onClick={() => runAction(() => clearPendingSlot(run.id))}
                   >
-                    ↩ Position ändern
+                    ↩ Position zurücksetzen
                   </button>
                 </div>
               </div>
 
               {/* Step 3: Pick asset */}
-              <div ref={assetRef} className="tr-action-card">
-                <div className="tr-action-header">
-                  <div className={`tr-step-dot ${phase === "need_asset" ? "active" : "idle"}`}>
-                    3
-                  </div>
-                  <div className="tr-action-title">Spieler auswählen</div>
+              <div ref={assetRef} className="tr-card">
+                <div className="tr-card-header">
+                  <div className={`tr-step-dot ${phase === "need_asset" ? "active" : "idle"}`}>3</div>
+                  <div className={`tr-card-title ${phase === "need_asset" ? "" : "muted"}`}>Spieler auswählen</div>
                 </div>
-                <div className="tr-action-body">
+                <div className="tr-card-body">
                   {phase !== "need_asset" ? (
-                    <p style={{ color: "#555570", fontSize: 13, margin: 0 }}>
+                    <p style={{ color: "var(--tr-text3)", fontSize: 13, margin: 0 }}>
                       Erst Team würfeln und Position wählen.
                     </p>
                   ) : availableAssets.length === 0 ? (
-                    <p style={{ color: "#f97316", fontSize: 13, margin: 0 }}>
-                      Keine Spieler gefunden. Wähle eine andere Position.
+                    <p style={{ color: "var(--tr-amber)", fontSize: 13, margin: 0 }}>
+                      Keine Spieler gefunden — wähle eine andere Position.
                     </p>
                   ) : (
                     <>
-                      <div style={{ marginBottom: 10, fontSize: 12, color: "#555570", letterSpacing: 1, textTransform: "uppercase" }}>
-                        {state?.pending_slot} · {currentTeam?.name}
+                      <div style={{ marginBottom: 10, fontSize: 11, color: "var(--tr-text3)", letterSpacing: 1, textTransform: "uppercase", fontWeight: 700 }}>
+                        {state?.pending_slot} · {currentTeam?.abbr} — {currentTeam?.name}
                       </div>
                       <div className="tr-asset-list">
                         {availableAssets.map((a) => {
@@ -903,12 +711,10 @@ export default function TeamRollClient({
                           const [assetType, assetIdRaw] = selectedAsset.split(":");
                           const assetId = assetIdRaw || null;
                           setSelectedAsset("");
-                          runAction(() =>
-                            pickAsset(run.id, assetType as "player" | "coach" | "dst", assetId)
-                          );
+                          runAction(() => pickAsset(run.id, assetType as "player" | "coach" | "dst", assetId));
                         }}
                       >
-                        {isPending ? "Speichern..." : "✓ Bestätigen"}
+                        {isPending ? "Speichern…" : "✓ Bestätigen"}
                       </button>
                     </>
                   )}
@@ -917,26 +723,27 @@ export default function TeamRollClient({
             </>
           )}
 
-          {/* Complete */}
+          {/* ── Complete ── */}
           {run && phase === "complete" && (
             <>
-              <div className="tr-action-card" style={{ marginTop: 20 }}>
+              <div className="tr-card">
                 <div className="tr-complete">
                   <div className="tr-complete-icon">🏆</div>
                   <div className="tr-complete-title">Lineup komplett!</div>
-                  <p className="tr-complete-sub">Dein Team Roll Draft für Season {currentSeason} ist abgeschlossen.</p>
+                  <p className="tr-complete-sub">
+                    Dein Team Roll Draft für Season {currentSeason} ist abgeschlossen.
+                  </p>
                 </div>
               </div>
-              {/* Final lineup */}
-              <div className="tr-lineup">
+              <div className="tr-lineup" style={{ marginTop: 8 }}>
                 {ALL_SLOTS.map((slot) => {
                   const pick = picksBySlot.get(slot);
                   const meta = SLOT_META[slot];
                   return (
                     <div key={slot} className="tr-slot filled">
                       <div className="tr-slot-accent" style={{ background: meta.color }} />
-                      <div style={{ paddingLeft: 8 }}>
-                        <div className="tr-slot-tag">{slot}</div>
+                      <div className="tr-slot-tag">{slot}</div>
+                      <div className="tr-slot-content">
                         <div className="tr-slot-name">
                           {pick?.players?.full_name ??
                             pick?.coaches?.full_name ??
