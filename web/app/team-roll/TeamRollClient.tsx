@@ -185,17 +185,16 @@ export default function TeamRollClient({
     if (!run || freeBenchSlots.length === 0) return;
     const nextSlot = freeBenchSlots[0];
     setBenchPosition(pos);
-    // Slot wählen
+    // Slot wählen — Positions-Filter läuft im Server via bench_position state
     runAction(() => chooseSlot(run.id, nextSlot));
   }
 
-  // Bench assets = alle Spieler der gerollten Mannschaft in der gewählten Position
-  const filteredBenchAssets = useMemo(() => {
-    if (!benchPosition) return availableAssets;
-    return availableAssets.filter((a) => a.subtitle === benchPosition || a.subtitle.startsWith(benchPosition));
-  }, [availableAssets, benchPosition]);
-
-  const displayAssets = isBenchPhase ? filteredBenchAssets : availableAssets;
+  // Client-seitiger Filter: wenn benchPosition gewählt, nur diese Position zeigen
+  // (Server lädt für Bank-Slots alle Skill-Positionen, Client filtert dann)
+  const displayAssets = useMemo(() => {
+    if (!isBenchPhase || !benchPosition) return availableAssets;
+    return availableAssets.filter((a) => a.subtitle === benchPosition);
+  }, [availableAssets, isBenchPhase, benchPosition]);
 
   return (
     <>
