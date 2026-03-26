@@ -1,13 +1,13 @@
-import dotenv from "dotenv";
-dotenv.config({ path: ".env" });
-dotenv.config({ path: ".env.local" });
-
 // scripts/sync-playoff-points-nflverse.mjs
+import "dotenv/config";
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { parseCsv, loadEnvLocal } from "./lib/csv.mjs";
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
+loadEnvLocal();
+
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Default: nflverse weekly stats (season 2025) – you gave the correct URL
@@ -39,71 +39,6 @@ async function fetchText(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Download failed ${res.status}: ${url}`);
   return await res.text();
-}
-
-// Detect delimiter + parse CSV/TSV (supports quoted fields)
-function parseCSV(text) {
-  const firstLine = text.slice(0, text.indexOf("\n")).trimEnd();
-  const delim = firstLine.includes("\t") ? "\t" : ",";
-
-  const rows = [];
-  let row = [];
-  let cur = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const next = text[i + 1];
-
-    if (inQuotes) {
-      if (ch === `"` && next === `"`) {
-        cur += `"`;
-        i++;
-      } else if (ch === `"`) {
-        inQuotes = false;
-      } else {
-        cur += ch;
-      }
-      continue;
-    }
-
-    if (ch === `"`) {
-      inQuotes = true;
-      continue;
-    }
-
-    if (ch === "\r") continue;
-
-    if (ch === delim) {
-      row.push(cur);
-      cur = "";
-      continue;
-    }
-
-    if (ch === "\n") {
-      row.push(cur);
-      rows.push(row);
-      row = [];
-      cur = "";
-      continue;
-    }
-
-    cur += ch;
-  }
-
-  if (cur.length || row.length) {
-    row.push(cur);
-    rows.push(row);
-  }
-
-  const header = (rows.shift() ?? []).map((h) => String(h).trim());
-  return rows
-    .filter((r) => r.length && r.some((x) => String(x).trim() !== ""))
-    .map((r) => {
-      const obj = {};
-      for (let i = 0; i < header.length; i++) obj[header[i]] = r[i] ?? "";
-      return obj;
-    });
 }
 
 // Robust number parsing:
@@ -198,7 +133,7 @@ async function main() {
   console.log("CSV:", CSV_URL);
 
   const csvText = await fetchText(CSV_URL);
-  const rows = parseCSV(csvText);
+  const rows = parseCsv(csvText);
 
   if (!rows.length) {
     console.log("CSV empty, nothing to do.");

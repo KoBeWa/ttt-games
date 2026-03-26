@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import styles from "./playoffbracket.module.css";
+import styles from "./playoff-bracket.module.css";
 
 type Conference = "AFC" | "NFC";
 type RoundCode = "WC" | "DIV" | "CONF" | "SB";

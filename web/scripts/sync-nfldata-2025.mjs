@@ -2,46 +2,15 @@
 /**
  * Sync NFldata (nflverse) games.csv -> Supabase
  * Season: 2025 only
- *
- * Uses UNIQUE(seasons.year), UNIQUE(weeks.season_id, weeks.week_number),
- * and UNIQUE(games.external_id) for safe upserts.
- *
- * Requires env in web/.env.local:
- *  - SUPABASE_URL="https://....supabase.co"
- *  - SUPABASE_SERVICE_ROLE_KEY="...."   (server only!)
  */
 
 import "dotenv/config";
-import fs from "node:fs";
-import path from "node:path";
 import crypto from "node:crypto";
-import { createClient } from "@supabase/supabase-js";
 import { DateTime } from "luxon";
+import { parseCsv, loadEnvLocal, createSupabaseAdminClient } from "./lib/csv.mjs";
 
-
-// ---- load web/.env.local explicitly (Node doesn't auto-load it like Next.js) ----
-const ENV_LOCAL = path.join(process.cwd(), ".env.local");
-if (fs.existsSync(ENV_LOCAL)) {
-  const raw = fs.readFileSync(ENV_LOCAL, "utf8");
-  for (const line of raw.split("\n")) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*"?([^"]*)"?\s*$/i);
-    if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
-  }
-}
-
-// ---- env ----
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error("Missing env: SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY");
-  console.error("Put them into /workspaces/ttt-games/web/.env.local and re-run from /web");
-  process.exit(1);
-}
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false },
-});
+loadEnvLocal();
+const supabase = createSupabaseAdminClient();
 
 // ---- stable UUID from string (for teams only; seasons/weeks/games use DB ids) ----
 function uuidFromString(input) {
@@ -51,61 +20,6 @@ function uuidFromString(input) {
   bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant
   const hex = bytes.toString("hex");
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
-// ---- tiny CSV parser (quoted commas supported) ----
-function parseCsv(text) {
-  const rows = [];
-  let i = 0;
-  let field = "";
-  let row = [];
-  let inQuotes = false;
-
-  while (i < text.length) {
-    const c = text[i];
-
-    if (c === '"') {
-      if (inQuotes && text[i + 1] === '"') {
-        field += '"';
-        i += 2;
-        continue;
-      }
-      inQuotes = !inQuotes;
-      i++;
-      continue;
-    }
-
-    if (!inQuotes && (c === "," || c === "\n" || c === "\r")) {
-      if (c === ",") {
-        row.push(field);
-        field = "";
-        i++;
-        continue;
-      }
-      row.push(field);
-      field = "";
-      if (row.length > 1 || row[0] !== "") rows.push(row);
-      row = [];
-      if (c === "\r" && text[i + 1] === "\n") i += 2;
-      else i++;
-      continue;
-    }
-
-    field += c;
-    i++;
-  }
-
-  if (field.length || row.length) {
-    row.push(field);
-    rows.push(row);
-  }
-
-  const header = rows.shift().map((h) => h.trim());
-  return rows.map((r) => {
-    const obj = {};
-    header.forEach((h, idx) => (obj[h] = (r[idx] ?? "").trim()));
-    return obj;
-  });
 }
 
 function toInt(x) {
