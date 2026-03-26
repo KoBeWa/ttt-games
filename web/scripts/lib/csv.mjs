@@ -1,8 +1,15 @@
+import fs from "node:fs";
+import path from "node:path";
+import { createClient } from "@supabase/supabase-js";
+
 /**
  * Shared CSV/TSV parser for all sync scripts.
- * Supports quoted fields, comma & tab delimiters, CRLF line endings.
+ * Supports quoted fields, comma & tab delimiters, CRLF line endings, BOM.
  */
 export function parseCsv(text) {
+  // Strip UTF-8 BOM if present
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+
   const delim = text.slice(0, text.indexOf("\n")).includes("\t") ? "\t" : ",";
   const rows = [];
   let i = 0, field = "", row = [], inQuotes = false;
@@ -49,15 +56,29 @@ export async function chunkUpsert(supabase, table, rows, onConflict, chunkSize =
 
 /**
  * Load .env.local from cwd (same pattern used in all scripts).
+ * Must be called before accessing process.env.
  */
 export function loadEnvLocal() {
-  const { existsSync, readFileSync } = await import("node:fs");
-  const { join } = await import("node:path");
-  const envFile = join(process.cwd(), ".env.local");
-  if (existsSync(envFile)) {
-    for (const line of readFileSync(envFile, "utf8").split("\n")) {
+  const envFile = path.join(process.cwd(), ".env.local");
+  if (fs.existsSync(envFile)) {
+    for (const line of fs.readFileSync(envFile, "utf8").split("\n")) {
       const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*"?([^"]*)"?\s*$/i);
       if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
     }
   }
+}
+
+/**
+ * Create a Supabase service-role client using env variables.
+ * Validates that required env vars are present and exits on failure.
+ * @returns {import("@supabase/supabase-js").SupabaseClient}
+ */
+export function createSupabaseAdminClient() {
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    console.error("Missing env: SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY");
+    process.exit(1);
+  }
+  return createClient(url, key, { auth: { persistSession: false } });
 }

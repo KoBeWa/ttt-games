@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import styles from "./playoffchallenge.module.css";
+import styles from "./playoff-challenge.module.css";
 
 type PlayerPos = "QB" | "RB" | "WR" | "TE" | "K";
 type TabPos = PlayerPos | "DEF";
