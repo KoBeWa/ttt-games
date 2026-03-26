@@ -370,27 +370,27 @@ export default function PlayoffBracketPage() {
     const selectedIsLoss =
       isGameFinal && !isPush && picked != null && slot.game.winner_team_id != null && picked !== slot.game.winner_team_id;
 
-    const headerBadgeClass = isBracketLocked ? styles.loss : styles.pending;
-    const headerBadgeLabel = isBracketLocked ? "Bracket locked" : "Open";
+    const badgeClass = isBracketLocked ? styles.badgeLocked : styles.badgePending;
+    const badgeLabel = isBracketLocked ? "Gelockt" : "Offen";
 
     const actualWinner = slot.game.winner_team_id ? teamsById.get(slot.game.winner_team_id) ?? null : null;
 
     return (
-      <div className={styles.card}>
-        <div className={styles.cardTop}>
+      <div className={styles.gameCard}>
+        <div className={styles.gameCardTop}>
           <span>{new Date(slot.game.start_time).toLocaleString("de-DE")}</span>
-          <span className={headerBadgeClass}>{headerBadgeLabel}</span>
+          <span className={`${styles.badge} ${badgeClass}`}>{badgeLabel}</span>
         </div>
 
         <div className={styles.realWinnerRow}>
-          <span className={styles.realWinnerLabel}>Real winner:</span>
+          <span className={styles.realWinnerLabel}>Gewinner:</span>
           {actualWinner ? (
             <span className={styles.realWinnerValue}>
               {actualWinner.logo_url ? <img className={styles.teamLogo} src={actualWinner.logo_url} alt={actualWinner.abbr} /> : <span>🏈</span>}
               {actualWinner.name}
             </span>
           ) : (
-            <span className={styles.pending}>TBD</span>
+            <span className={`${styles.badge} ${styles.badgeTbd}`}>TBD</span>
           )}
         </div>
 
@@ -422,82 +422,104 @@ export default function PlayoffBracketPage() {
   };
 
   return (
-    <main className={styles.page}>
-      <div className={styles.headerRow}>
-        <h1>NFL Playoff Bracket</h1>
-        <Link href="/app">← Dashboard</Link>
-      </div>
-
-      <p className={styles.subtitle}>
-        Initial siehst du nur Wildcard + Byes. Divisional/Conference/Super Bowl füllen sich dynamisch aus deinen Picks (NFL Re-Seeding).
-      </p>
-
-      {wildcardLockAt && (
-        <p className={isBracketLocked ? styles.locked : styles.unlocked}>
-          {isBracketLocked
-            ? `🔒 Bracket gelockt seit ${wildcardLockAt.toLocaleString("de-DE")}`
-            : `🟢 Bracket offen bis ${wildcardLockAt.toLocaleString("de-DE")}`}
-        </p>
-      )}
-
-      {error && <p className={styles.error}>Fehler: {error}</p>}
-      {!loading && seeds.length === 0 && (
-        <p className={styles.error}>
-          Keine Seeds gefunden für Season {SEASON}. Prüfe, ob Daten in <code>playoff_seeds</code> oder <code>playoff_team_seeds</code> für diese Season vorhanden sind.
-        </p>
-      )}
-
-      <section className={styles.scoreCard}>
-        <h2>Dein Score</h2>
-        <div className={styles.scoreGrid}>
-          {(["WC", "DIV", "CONF", "SB"] as RoundCode[]).map((r) => (
-            <div key={r} className={styles.scoreItem}>
-              <div>{ROUND_LABEL[r]}</div>
-              <strong>{score.byRound[r]} pts</strong>
-            </div>
-          ))}
+    <div className={styles.page}>
+      <div className={styles.container}>
+        <div className={styles.topbar}>
+          <div className={styles.titleGroup}>
+            <h1 className={styles.title}>NFL Playoff Bracket</h1>
+            <p className={styles.sub}>
+              Divisional / Conference / Super Bowl füllen sich dynamisch aus deinen Picks.
+            </p>
+          </div>
+          <Link href="/app" className={styles.backLink}>← Dashboard</Link>
         </div>
-        <p className={styles.total}>Total: {score.total} pts</p>
-      </section>
 
-      {loading ? (
-        <p>Lade…</p>
-      ) : (
-        <div className={styles.projectionGrid}>
-          {(["AFC", "NFC"] as Conference[]).map((conf) => {
-            const byes = seeds.filter((s) => s.conference === conf && s.seed === 1);
-            return (
-              <section key={conf} className={styles.projectionCard}>
-                <h3>{conf}</h3>
-                <p className={styles.roundHint}>Wildcard</p>
-                {bracket.perConf[conf].wc.map((slot) => (
-                  <div key={slot.game.id}>{renderSlot(slot)}</div>
-                ))}
+        {wildcardLockAt && (
+          <p className={isBracketLocked ? styles.locked : styles.unlocked}>
+            {isBracketLocked
+              ? `🔒 Bracket gelockt seit ${wildcardLockAt.toLocaleString("de-DE")}`
+              : `🟢 Bracket offen bis ${wildcardLockAt.toLocaleString("de-DE")}`}
+          </p>
+        )}
 
-                <div className={styles.card}>
-                  <div className={styles.cardTop}>
-                    <span>First-Round Bye</span>
-                  </div>
-                  <div className={styles.byeTeam}>{byes[0]?.teams?.logo_url ? <img className={styles.teamLogo} src={byes[0].teams.logo_url} alt={byes[0].teams.abbr} /> : <span>🏈</span>}{byes[0]?.teams ? `${byes[0].teams.abbr} ${byes[0].teams.name}` : "TBD"}</div>
+        {error && <p className={styles.errorBanner}>Fehler: {error}</p>}
+        {!loading && seeds.length === 0 && (
+          <p className={styles.errorBanner}>
+            Keine Seeds für Season {SEASON} gefunden.
+          </p>
+        )}
+
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <span className={styles.cardTitle}>Dein Score</span>
+            <span style={{ fontSize: 20, fontWeight: 900 }}>{score.total} pts</span>
+          </div>
+          <div className={styles.cardBody}>
+            <div className={styles.scoreGrid}>
+              {(["WC", "DIV", "CONF", "SB"] as RoundCode[]).map((r) => (
+                <div key={r} className={styles.scoreItem}>
+                  <div className={styles.scoreLabel}>{ROUND_LABEL[r]}</div>
+                  <div className={styles.scoreValue}>{score.byRound[r]} pts</div>
                 </div>
-
-                <p className={styles.roundHint}>Divisional</p>
-                {bracket.perConf[conf].div.map((slot) => (
-                  <div key={slot.game.id}>{renderSlot(slot)}</div>
-                ))}
-
-                <p className={styles.roundHint}>Conference Championship</p>
-                {bracket.perConf[conf].conf ? renderSlot(bracket.perConf[conf].conf) : <div className={styles.card}>TBD</div>}
-              </section>
-            );
-          })}
-
-          <section className={styles.projectionCard}>
-            <h3>Super Bowl</h3>
-            {bracket.superBowl ? renderSlot(bracket.superBowl) : <div className={styles.card}>TBD</div>}
-          </section>
+              ))}
+            </div>
+          </div>
         </div>
-      )}
-    </main>
+
+        {loading ? (
+          <p style={{ color: "#6b7280", fontSize: 14 }}>Lade…</p>
+        ) : (
+          <div className={styles.projectionGrid}>
+            {(["AFC", "NFC"] as Conference[]).map((conf) => {
+              const byes = seeds.filter((s) => s.conference === conf && s.seed === 1);
+              return (
+                <div key={conf} className={styles.projectionCard}>
+                  <div className={styles.projectionCardHeader}>
+                    <span className={styles.confTitle}>{conf}</span>
+                  </div>
+                  <div className={styles.projectionCardBody}>
+                    <p className={styles.roundHint}>Wildcard</p>
+                    {bracket.perConf[conf].wc.map((slot) => (
+                      <div key={slot.game.id}>{renderSlot(slot)}</div>
+                    ))}
+
+                    <div className={styles.byeCard}>
+                      <div className={styles.byeLabel}>First-Round Bye</div>
+                      <div className={styles.byeTeam}>
+                        {byes[0]?.teams?.logo_url
+                          ? <img className={styles.teamLogo} src={byes[0].teams.logo_url} alt={byes[0].teams.abbr} />
+                          : <span>🏈</span>}
+                        {byes[0]?.teams ? `${byes[0].teams.abbr} – ${byes[0].teams.name}` : "TBD"}
+                      </div>
+                    </div>
+
+                    <p className={styles.roundHint}>Divisional</p>
+                    {bracket.perConf[conf].div.map((slot) => (
+                      <div key={slot.game.id}>{renderSlot(slot)}</div>
+                    ))}
+
+                    <p className={styles.roundHint}>Conference Championship</p>
+                    {bracket.perConf[conf].conf
+                      ? renderSlot(bracket.perConf[conf].conf)
+                      : <div className={styles.gameCard} style={{ color: "#9ca3af", fontSize: 13 }}>TBD</div>}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className={styles.projectionCard}>
+              <div className={styles.projectionCardHeader}>
+                <span className={styles.confTitle}>🏆 Super Bowl</span>
+              </div>
+              <div className={styles.projectionCardBody}>
+                {bracket.superBowl
+                  ? renderSlot(bracket.superBowl)
+                  : <div className={styles.gameCard} style={{ color: "#9ca3af", fontSize: 13 }}>TBD</div>}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
