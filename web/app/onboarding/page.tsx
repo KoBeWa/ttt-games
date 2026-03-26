@@ -3,14 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import styles from "./onboarding.module.css";
 
 export default function OnboardingPage() {
   const supabase = createSupabaseBrowserClient();
   const router = useRouter();
 
   const [username, setUsername] = useState("");
-  const [error, setError] = useState<string|null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -22,23 +24,25 @@ export default function OnboardingPage() {
 
   async function save() {
     setError(null);
-    const { data } = await supabase.auth.getUser();
-    const user = data?.user;
-    if (!user) return router.push("/login");
-
     const clean = username.trim();
     if (clean.length < 3) return setError("Username muss mindestens 3 Zeichen haben.");
 
-    const { error } = await supabase
+    setSaving(true);
+    const { data } = await supabase.auth.getUser();
+    const user = data?.user;
+    if (!user) { router.push("/login"); return; }
+
+    const { error: dbErr } = await supabase
       .from("profiles")
       .update({ username: clean })
       .eq("user_id", user.id);
 
-    if (error) {
-      if ((error as any).code === "23505" && error.message.includes("profiles_username_key")) {
-        setError("Username ist leider schon vergeben.");
+    setSaving(false);
+    if (dbErr) {
+      if ((dbErr as any).code === "23505" && dbErr.message.includes("profiles_username_key")) {
+        setError("Dieser Username ist leider schon vergeben.");
       } else {
-        setError(error.message);
+        setError(dbErr.message);
       }
       return;
     }
@@ -46,25 +50,38 @@ export default function OnboardingPage() {
     router.push("/app");
   }
 
-  if (loading) return <p style={{ padding: 20 }}>Lade…</p>;
+  if (loading) return null;
 
   return (
-    <main style={{ maxWidth: 520, margin: "60px auto", fontFamily: "system-ui" }}>
-      <h1>Username wählen</h1>
-      <p>Der Username ist für andere sichtbar (Leaderboards etc.).</p>
+    <div className={styles.page}>
+      <div className={styles.card}>
+        <div className={styles.iconWrap}>🏷️</div>
 
-      {error && <p style={{ background: "#fee", border: "1px solid #fbb", padding: 10, borderRadius: 8 }}>Fehler: {error}</p>}
+        <h1 className={styles.title}>Username wählen</h1>
+        <p className={styles.sub}>
+          Dein Username ist für andere Spieler sichtbar – auf Leaderboards und in Gruppen.
+        </p>
 
-      <input
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="z.B. Jens"
-        style={{ width: "100%", padding: 12, borderRadius: 8, border: "1px solid #ddd" }}
-      />
+        <label className={styles.label}>Username</label>
+        <div className={styles.inputWrap}>
+          <span className={styles.prefix}>@</span>
+          <input
+            className={styles.input}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Dein Name"
+            onKeyDown={(e) => e.key === "Enter" && save()}
+            autoFocus
+          />
+        </div>
+        <p className={styles.hint}>Mindestens 3 Zeichen, keine Leerzeichen.</p>
 
-      <button onClick={save} style={{ marginTop: 12, padding: 12, borderRadius: 8, border: "1px solid #ddd" }}>
-        Speichern
-      </button>
-    </main>
+        {error && <p className={styles.error}>{error}</p>}
+
+        <button className={styles.btn} onClick={save} disabled={saving}>
+          {saving ? "Speichere…" : "Weiter →"}
+        </button>
+      </div>
+    </div>
   );
 }

@@ -1,0 +1,158 @@
+.page {
+  min-height: 100vh;
+  background: #f9fafb;
+}
+
+.topbar {
+  background: #111827;
+  color: #fff;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brandIcon {
+  width: 32px;
+  height: 32px;
+  background: #3b82f6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.userBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  background: #374151;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+.greeting {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #111827;
+}
+
+.greetingSub {
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin: 32px 0 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 20px;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.card:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.cardArrow {
+  color: #d1d5db;
+  font-size: 18px;
+  font-weight: 300;
+}
+
+.cardName {
+  font-size: 15px;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.01em;
+}
+
+.cardDesc {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+@media (max-width: 700px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .greeting {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 440px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
