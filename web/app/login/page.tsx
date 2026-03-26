@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import styles from "./login.module.css";
 
 export default function LoginPage() {
   const supabase = createSupabaseBrowserClient();
@@ -13,12 +15,10 @@ export default function LoginPage() {
   const [msg, setMsg] = useState<string | null>(null);
 
   async function routeAfterAuth() {
-    // hol aktuellen user
     const { data: auth } = await supabase.auth.getUser();
     const user = auth?.user;
     if (!user) return;
 
-    // check ob username existiert
     const { data: prof, error: profErr } = await supabase
       .from("profiles")
       .select("username")
@@ -34,61 +34,66 @@ export default function LoginPage() {
     else router.push("/app");
   }
 
-  async function signUp() {
-    setMsg(null);
-    const { error } = await supabase.auth.signUp({ email, password: pw });
-    if (error) {
-      setMsg(error.message);
-      return;
-    }
-
-    // Je nach Supabase-Setting muss man evtl. Mail bestätigen.
-    // Falls Signup sofort eingeloggt ist, leiten wir direkt weiter.
-    await routeAfterAuth();
-    setMsg("Signup ok (ggf. Mail bestätigen).");
-  }
-
   async function signIn() {
     setMsg(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
-    if (error) {
-      setMsg(error.message);
-      return;
-    }
-
-    // Nach Login direkt weiter zu Pick’em (oder Onboarding falls kein Username)
+    if (error) { setMsg(error.message); return; }
     await routeAfterAuth();
   }
 
+  async function signUp() {
+    setMsg(null);
+    const { error } = await supabase.auth.signUp({ email, password: pw });
+    if (error) { setMsg(error.message); return; }
+    await routeAfterAuth();
+    setMsg("Signup ok – ggf. E-Mail bestätigen.");
+  }
+
   return (
-    <main style={{ maxWidth: 420, margin: "40px auto", fontFamily: "system-ui" }}>
-      <h1>Login</h1>
+    <div className={styles.page}>
+      <div className={styles.card}>
+        <div className={styles.logoRow}>
+          <div className={styles.logoIcon}>T</div>
+          <span className={styles.logoName}>TTT Games</span>
+        </div>
 
-      <input
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        style={{ width: "100%", padding: 10, marginTop: 12 }}
-      />
+        <h1 className={styles.title}>Willkommen zurück</h1>
+        <p className={styles.sub}>Melde dich an oder erstelle ein neues Konto.</p>
 
-      <input
-        placeholder="Passwort"
-        type="password"
-        value={pw}
-        onChange={(e) => setPw(e.target.value)}
-        style={{ width: "100%", padding: 10, marginTop: 12 }}
-      />
+        <label className={styles.label}>E-Mail</label>
+        <input
+          className={styles.input}
+          type="email"
+          placeholder="du@beispiel.de"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-      <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-        <button onClick={signIn} style={{ padding: 10, flex: 1 }}>
-          Sign in
-        </button>
-        <button onClick={signUp} style={{ padding: 10, flex: 1 }}>
-          Sign up
-        </button>
+        <label className={styles.label}>Passwort</label>
+        <input
+          className={styles.input}
+          type="password"
+          placeholder="••••••••"
+          value={pw}
+          onChange={(e) => setPw(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && signIn()}
+        />
+
+        <div className={styles.actions}>
+          <button className={styles.btnPrimary} onClick={signIn}>
+            Anmelden
+          </button>
+          <button className={styles.btnSecondary} onClick={signUp}>
+            Registrieren
+          </button>
+        </div>
+
+        {msg && <p className={styles.msg}>{msg}</p>}
+
+        <p className={styles.backLink}>
+          <Link href="/">← Zurück zur Startseite</Link>
+        </p>
       </div>
-
-      {msg && <p style={{ marginTop: 12 }}>{msg}</p>}
-    </main>
+    </div>
   );
 }
