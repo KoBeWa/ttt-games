@@ -31,6 +31,8 @@ type SlotPoints = { slot: string; points: number; is_completed: boolean; week_nu
 type RoundScore = { round: number; player_points: number; dst_points: number; total_points: number };
 type StandingRow = { entry_id: string; user_id: string; user_name: string; total_points: number };
 type SlotKickoff = { slot: string; kickoff: string | null; started: boolean | null };
+type BracketTeam = { id: string; abbr: string; name: string };
+type BracketGame = { id: string; round: "WC" | "DIV" | "CONF" | "SB"; conference: "AFC" | "NFC" | null; start_time: string; status: string | null; winner_team_id: string | null; home: BracketTeam | null; away: BracketTeam | null };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function slotPosition(slot: string): string {
@@ -60,7 +62,7 @@ export default function PlayoffChallengePage() {
   const [rounds, setRounds] = useState<Round[]>([]);
   const [myEntry, setMyEntry] = useState<{ id: string } | null>(null);
   const [selectedRound, setSelectedRound] = useState(1);
-  const [tab, setTab] = useState<"lineup" | "standings">("lineup");
+  const [tab, setTab] = useState<"lineup" | "standings" | "bracket">("lineup");
 
   // Lineup data
   const [lineup, setLineup] = useState<LineupSlot[]>([]);
@@ -77,6 +79,10 @@ export default function PlayoffChallengePage() {
   // Scoring
   const [roundScores, setRoundScores] = useState<RoundScore[]>([]);
   const [standings, setStandings] = useState<StandingRow[]>([]);
+
+  // Bracket (read-only, shown as reference)
+  const [bracketGames, setBracketGames] = useState<BracketGame[]>([]);
+  const [rightTab, setRightTab] = useState<"standings" | "bracket">("standings");
 
   // ── Derived ────────────────────────────────────────────────────────────────
   const currentRound = useMemo(() => {
@@ -191,6 +197,14 @@ export default function PlayoffChallengePage() {
         await loadStandings();
       }
 
+      // Bracket data (public, no auth needed)
+      const { data: gData } = await supabase
+        .from("playoff_games")
+        .select("id,round,conference,start_time,status,winner_team_id,home:home_team_id(id,abbr,name),away:away_team_id(id,abbr,name)")
+        .eq("season", SEASON)
+        .order("start_time");
+      if (gData) setBracketGames(gData as unknown as BracketGame[]);
+
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -257,65 +271,51 @@ export default function PlayoffChallengePage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap');
-
         .pc-root {
-          --pc-bg:       #f8f7f4;
+          --pc-bg:       #ffffff;
           --pc-surface:  #ffffff;
-          --pc-surface2: #f1f0ec;
-          --pc-border:   rgba(0,0,0,0.08);
-          --pc-border2:  rgba(0,0,0,0.14);
-          --pc-text1:    #111110;
-          --pc-text2:    #44433f;
-          --pc-text3:    #888780;
-          --pc-navy:     #0b3a75;
-          --pc-navy-lt:  #e3effd;
-          --pc-navy-tx:  #0d47a1;
-          --pc-green:    #1b5e20;
-          --pc-green-lt: #e8f5e9;
-          --pc-red:      #b71c1c;
-          --pc-red-lt:   #ffebee;
-          --pc-amber:    #e65100;
-          --pc-amber-lt: #fff3e0;
-          --pc-gold:     #f9a825;
-          font-family: 'DM Sans', system-ui, sans-serif;
+          --pc-surface2: #f9fafb;
+          --pc-border:   #e5e7eb;
+          --pc-border2:  #d1d5db;
+          --pc-text1:    #111827;
+          --pc-text2:    #374151;
+          --pc-text3:    #6b7280;
+          --pc-navy:     #111827;
+          --pc-navy-lt:  #eff6ff;
+          --pc-navy-tx:  #2563eb;
+          --pc-green:    #166534;
+          --pc-green-lt: #f0fdf4;
+          --pc-red:      #b91c1c;
+          --pc-red-lt:   #fef2f2;
+          --pc-amber:    #c2410c;
+          --pc-amber-lt: #fff7ed;
+          --pc-gold:     #f59e0b;
           background: var(--pc-bg);
           color: var(--pc-text1);
           min-height: 100vh;
-        }
-        @media (max-width: 767px) and (prefers-color-scheme: dark) {
-          .pc-root {
-            --pc-bg:       #161b27; --pc-surface:  #1e2535; --pc-surface2: #242c3d;
-            --pc-border:   rgba(255,255,255,0.07); --pc-border2:  rgba(255,255,255,0.13);
-            --pc-text1:    #ecedf0; --pc-text2:    #9aa3b8; --pc-text3:    #606880;
-            --pc-navy:     #2255a8; --pc-navy-lt:  #1a2b4a; --pc-navy-tx:  #90b8f0;
-            --pc-green:    #7ec88a; --pc-green-lt: #1a2d1e;
-            --pc-red:      #f48fb1; --pc-red-lt:   #2d1a1a;
-            --pc-amber:    #ffb74d; --pc-amber-lt: #2d2010;
-          }
         }
 
         /* ── Nav ── */
         .pc-nav {
           position: sticky; top: 0; z-index: 50;
-          background: var(--pc-surface); border-bottom: 1px solid var(--pc-border);
+          background: #111827; border-bottom: 1px solid rgba(255,255,255,0.08);
           padding: 10px 20px;
           display: flex; align-items: center; justify-content: space-between; gap: 12px;
         }
         .pc-nav-left { display: flex; align-items: center; gap: 10px; }
-        .pc-back { font-size: 13px; color: var(--pc-text3); text-decoration: none; transition: color .15s; }
-        .pc-back:hover { color: var(--pc-text1); }
-        .pc-nav-title { font-size: 17px; font-weight: 700; color: var(--pc-text1); }
-        .pc-nav-sub   { font-size: 11px; color: var(--pc-text3); margin-top: 1px; }
+        .pc-back { font-size: 13px; color: rgba(255,255,255,0.5); text-decoration: none; transition: color .15s; }
+        .pc-back:hover { color: #fff; }
+        .pc-nav-title { font-size: 17px; font-weight: 700; color: #fff; }
+        .pc-nav-sub   { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 1px; }
         .pc-pills { display: flex; gap: 6px; }
         .pc-pill {
           display: flex; flex-direction: column; align-items: center;
-          background: var(--pc-surface2); border-radius: 10px;
+          background: rgba(255,255,255,0.1); border-radius: 10px;
           padding: 4px 11px; min-width: 44px;
         }
-        .pc-pill-val { font-size: 14px; font-weight: 700; color: var(--pc-text1); line-height: 1; font-family: 'DM Mono', monospace; }
-        .pc-pill-lbl { font-size: 9px; color: var(--pc-text3); letter-spacing: .5px; margin-top: 2px; text-transform: uppercase; }
-        .pc-pill.rank .pc-pill-val { color: var(--pc-navy-tx); }
+        .pc-pill-val { font-size: 14px; font-weight: 700; color: #fff; line-height: 1; font-family: monospace; }
+        .pc-pill-lbl { font-size: 9px; color: rgba(255,255,255,0.5); letter-spacing: .5px; margin-top: 2px; text-transform: uppercase; }
+        .pc-pill.rank .pc-pill-val { color: #93c5fd; }
 
         /* ── Error ── */
         .pc-error {
@@ -330,6 +330,7 @@ export default function PlayoffChallengePage() {
           .pc-tabs {
             display: flex; gap: 3px; padding: 4px;
             background: var(--pc-surface2); border-bottom: 1px solid var(--pc-border);
+            position: sticky; top: 49px; z-index: 40;
           }
         }
         .pc-tab {
@@ -382,7 +383,7 @@ export default function PlayoffChallengePage() {
           padding: 12px 14px; display: flex; align-items: center; gap: 12px;
         }
         .pc-round-bar-title { font-size: 12px; font-weight: 700; color: var(--pc-navy-tx); }
-        .pc-round-pts { font-size: 26px; font-weight: 700; color: var(--pc-navy-tx); line-height: 1; font-family: 'DM Mono', monospace; }
+        .pc-round-pts { font-size: 26px; font-weight: 700; color: var(--pc-navy-tx); line-height: 1; font-family: monospace; }
         .pc-round-sub  { font-size: 11px; color: var(--pc-text3); margin-top: 2px; }
         .pc-round-badge {
           margin-left: auto; font-size: 11px; font-weight: 700;
@@ -445,10 +446,10 @@ export default function PlayoffChallengePage() {
           font-size: 12px; font-weight: 600; color: var(--pc-text1);
           line-height: 1.3; flex: 1;
         }
-        .pc-slot-team { font-size: 10px; color: var(--pc-text3); font-family: 'DM Mono', monospace; }
+        .pc-slot-team { font-size: 10px; color: var(--pc-text3); font-family: monospace; }
         .pc-slot-pts {
           font-size: 18px; font-weight: 700; line-height: 1;
-          font-family: 'DM Mono', monospace; margin-top: 2px;
+          font-family: monospace; margin-top: 2px;
           color: var(--pc-text1);
         }
         .pc-slot-pts.pts-zero { color: var(--pc-text3); }
@@ -461,7 +462,7 @@ export default function PlayoffChallengePage() {
         .pc-slot-streak {
           position: absolute; bottom: 7px; right: 8px;
           font-size: 10px; font-weight: 700; color: var(--pc-gold);
-          font-family: 'DM Mono', monospace;
+          font-family: monospace;
         }
         .pc-slot-empty-label {
           font-size: 11px; color: var(--pc-text3); text-align: center;
@@ -539,7 +540,7 @@ export default function PlayoffChallengePage() {
           font-size: 12px; font-weight: 700; color: var(--pc-text3);
         }
         .pc-picker-name { font-size: 13px; font-weight: 600; color: var(--pc-text1); flex: 1; }
-        .pc-picker-team { font-size: 11px; color: var(--pc-text3); font-family: 'DM Mono', monospace; }
+        .pc-picker-team { font-size: 11px; color: var(--pc-text3); font-family: monospace; }
 
         /* ── Right panel (standings) ── */
         .pc-panel-header {
@@ -558,7 +559,7 @@ export default function PlayoffChallengePage() {
         }
         .pc-round-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
         .pc-round-card-name { font-size: 12px; font-weight: 700; color: var(--pc-text2); }
-        .pc-round-card-pts { font-size: 15px; font-weight: 700; font-family: 'DM Mono', monospace; color: var(--pc-text1); }
+        .pc-round-card-pts { font-size: 15px; font-weight: 700; font-family: monospace; color: var(--pc-text1); }
         .pc-round-card-pts.zero { color: var(--pc-text3); }
         .pc-round-card-sub { display: flex; gap: 10px; }
         .pc-round-sub-item { font-size: 11px; color: var(--pc-text3); }
@@ -572,11 +573,11 @@ export default function PlayoffChallengePage() {
         }
         .pc-lb-row:hover { background: var(--pc-surface2); }
         .pc-lb-row.me { background: var(--pc-navy-lt); border: 1px solid rgba(11,58,117,.12); }
-        .pc-lb-rank { width: 22px; text-align: center; flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--pc-text3); font-family: 'DM Mono', monospace; }
+        .pc-lb-rank { width: 22px; text-align: center; flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--pc-text3); font-family: monospace; }
         .pc-lb-rank.top3 { color: var(--pc-amber); }
         .pc-lb-name { flex: 1; font-size: 13px; font-weight: 600; color: var(--pc-text1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .pc-lb-name.me { color: var(--pc-navy-tx); }
-        .pc-lb-pts { font-size: 13px; font-weight: 700; color: var(--pc-text2); font-family: 'DM Mono', monospace; }
+        .pc-lb-pts { font-size: 13px; font-weight: 700; color: var(--pc-text2); font-family: monospace; }
         .pc-lb-pts.me { color: var(--pc-navy-tx); }
 
         /* Skeleton */
@@ -626,6 +627,9 @@ export default function PlayoffChallengePage() {
           <button className={`pc-tab ${tab === "standings" ? "active" : ""}`} onClick={() => setTab("standings")}>
             Standings
           </button>
+          <button className={`pc-tab ${tab === "bracket" ? "active" : ""}`} onClick={() => setTab("bracket")}>
+            Bracket
+          </button>
         </div>
 
         {/* ═══ DESKTOP ═══ */}
@@ -641,7 +645,26 @@ export default function PlayoffChallengePage() {
             />
           </div>
           <div className="pc-right">
-            <StandingsCol standings={standings} uid={uid} roundScores={roundScores} rounds={rounds} loading={loading} />
+            <div style={{ display: "flex", borderBottom: "1px solid var(--pc-border)", background: "var(--pc-surface2)" }}>
+              {(["standings", "bracket"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setRightTab(t)}
+                  style={{
+                    flex: 1, border: "none", padding: "10px 8px", fontSize: 12, fontWeight: 700,
+                    cursor: "pointer", background: "transparent", fontFamily: "inherit",
+                    color: rightTab === t ? "var(--pc-text1)" : "var(--pc-text3)",
+                    borderBottom: rightTab === t ? "2px solid var(--pc-navy)" : "2px solid transparent",
+                    textTransform: "uppercase", letterSpacing: "0.06em",
+                  }}
+                >
+                  {t === "standings" ? "Standings" : "Bracket"}
+                </button>
+              ))}
+            </div>
+            {rightTab === "standings"
+              ? <StandingsCol standings={standings} uid={uid} roundScores={roundScores} rounds={rounds} loading={loading} />
+              : <BracketMini games={bracketGames} selectedRound={selectedRound} />}
           </div>
         </div>
 
@@ -662,6 +685,11 @@ export default function PlayoffChallengePage() {
           {tab === "standings" && (
             <div className="pc-scroll">
               <StandingsCol standings={standings} uid={uid} roundScores={roundScores} rounds={rounds} loading={loading} />
+            </div>
+          )}
+          {tab === "bracket" && (
+            <div className="pc-scroll">
+              <BracketMini games={bracketGames} selectedRound={selectedRound} />
             </div>
           )}
         </div>
@@ -895,6 +923,86 @@ function LineupCol({
   );
 }
 
+// ── Bracket Mini (read-only reference) ────────────────────────────────────────
+const ROUND_ORDER: Array<"WC" | "DIV" | "CONF" | "SB"> = ["WC", "DIV", "CONF", "SB"];
+const ROUND_LABEL_BRACKET: Record<string, string> = { WC: "Wild Card", DIV: "Divisional", CONF: "Conf. Championship", SB: "Super Bowl" };
+
+function BracketMini({ games, selectedRound }: { games: BracketGame[]; selectedRound: number }) {
+  const [activeRound, setActiveRound] = useState<"WC" | "DIV" | "CONF" | "SB">(() => {
+    const map: Record<number, "WC" | "DIV" | "CONF" | "SB"> = { 1: "WC", 2: "DIV", 3: "CONF", 4: "SB" };
+    return map[selectedRound] ?? "WC";
+  });
+
+  const roundGames = games.filter((g) => g.round === activeRound);
+
+  function Matchup({ g }: { g: BracketGame }) {
+    const homeWon = g.winner_team_id && g.home && g.winner_team_id === g.home.id;
+    const awayWon = g.winner_team_id && g.away && g.winner_team_id === g.away.id;
+
+    function TeamRow({ team, won }: { team: BracketTeam | null; won: boolean }) {
+      if (!team) return (
+        <div style={{ padding: "7px 10px", fontSize: 12, color: "var(--pc-text3)", fontStyle: "italic" }}>TBD</div>
+      );
+      return (
+        <div style={{
+          padding: "7px 10px", display: "flex", alignItems: "center", justifyContent: "space-between",
+          background: won ? "var(--pc-green-lt)" : "transparent",
+        }}>
+          <span style={{ fontSize: 13, fontWeight: won ? 800 : 600, color: won ? "var(--pc-green)" : "var(--pc-text1)" }}>
+            {team.abbr}
+            <span style={{ fontWeight: 400, color: "var(--pc-text3)", fontSize: 11, marginLeft: 5 }}>{team.name}</span>
+          </span>
+          {won && <span style={{ fontSize: 10, fontWeight: 800, color: "var(--pc-green)", letterSpacing: "0.04em" }}>WIN</span>}
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ border: "1px solid var(--pc-border)", borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
+        {g.conference && (
+          <div style={{ padding: "4px 10px", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--pc-text3)", background: "var(--pc-surface2)", borderBottom: "1px solid var(--pc-border)" }}>
+            {g.conference}
+          </div>
+        )}
+        <TeamRow team={g.home} won={!!homeWon} />
+        <div style={{ height: 1, background: "var(--pc-border)" }} />
+        <TeamRow team={g.away} won={!!awayWon} />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div style={{ display: "flex", borderBottom: "1px solid var(--pc-border)", overflowX: "auto" }}>
+        {ROUND_ORDER.map((r) => (
+          <button
+            key={r}
+            onClick={() => setActiveRound(r)}
+            style={{
+              flex: "none", border: "none", background: "none", padding: "8px 12px 10px",
+              fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
+              fontFamily: "inherit", color: activeRound === r ? "var(--pc-navy-tx)" : "var(--pc-text3)",
+              borderBottom: activeRound === r ? "2px solid var(--pc-navy)" : "2px solid transparent",
+              transition: "all .15s",
+            }}
+          >
+            {r}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ padding: "12px 12px 16px" }}>
+        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--pc-text3)", marginBottom: 10 }}>
+          {ROUND_LABEL_BRACKET[activeRound]}
+        </div>
+        {roundGames.length === 0
+          ? <div style={{ fontSize: 13, color: "var(--pc-text3)", textAlign: "center", padding: "20px 0" }}>Noch keine Spiele.</div>
+          : roundGames.map((g) => <Matchup key={g.id} g={g} />)}
+      </div>
+    </>
+  );
+}
+
 // ── Standings Column ───────────────────────────────────────────────────────────
 function StandingsCol({ standings, uid, roundScores, rounds, loading }: {
   standings: StandingRow[]; uid: string | null;
@@ -945,7 +1053,7 @@ function StandingsCol({ standings, uid, roundScores, rounds, loading }: {
       <div style={{ display: "flex", gap: 8, padding: "0 22px 4px", fontSize: 10, fontWeight: 700, color: "var(--pc-text3)", letterSpacing: 1, textTransform: "uppercase" }}>
         <div style={{ width: 22 }}>#</div>
         <div style={{ flex: 1 }}>User</div>
-        <div style={{ fontFamily: "'DM Mono',monospace" }}>Pts</div>
+        <div style={{ fontFamily: "monospace" }}>Pts</div>
       </div>
 
       {loading ? (

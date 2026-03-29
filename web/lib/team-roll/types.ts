@@ -6,8 +6,6 @@ export type TeamRollSlot =
   | "QB" | "RB1" | "RB2" | "WR1" | "WR2" | "TE" | "DST" | "COACH"
   | "BENCH1" | "BENCH2" | "BENCH3" | "BENCH4" | "BENCH5";
 
-export type RunStatus = "active" | "bench" | "complete";
-
 export const STARTER_SLOTS: TeamRollSlot[] = ["QB", "RB1", "RB2", "WR1", "WR2", "TE", "DST", "COACH"];
 export const BENCH_SLOTS:   TeamRollSlot[] = ["BENCH1", "BENCH2", "BENCH3", "BENCH4", "BENCH5"];
 export const ALL_SLOTS:     TeamRollSlot[] = [...STARTER_SLOTS, ...BENCH_SLOTS];
