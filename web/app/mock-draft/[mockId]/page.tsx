@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createServerReadClient } from "@/lib/supabase/server";
 import MockDraftClient from "./ui/MockDraftClient";
 
-const PICKS_LOCK_AT_ISO = "2026-04-24T00:00:00.000Z"; // 24.04.2026 02:00 in Europe/Berlin
+const FALLBACK_LOCK_ISO = "2099-01-01T00:00:00.000Z"; // safe fallback if config missing
 
 export default async function MockDraftEditorPage({
   params,
@@ -27,6 +27,15 @@ export default async function MockDraftEditorPage({
   if (mockErr || !mock) {
     return <div className="p-6">Mock nicht gefunden oder kein Zugriff.</div>;
   }
+
+  // Load lock time from draft_config for this season
+  const { data: config } = await supabase
+    .from("draft_config")
+    .select("picks_lock_at")
+    .eq("season", mock.season)
+    .maybeSingle();
+
+  const picksLockAtIso = config?.picks_lock_at ?? FALLBACK_LOCK_ISO;
 
   const { data: realPicks } = await supabase
     .from("real_draft_picks")
@@ -161,7 +170,7 @@ export default async function MockDraftEditorPage({
       initialPicks={normalizedPicks}
       teamNeeds={needs ?? []}
       initialPlayers={normalizedPlayers}
-      picksLockAtIso={PICKS_LOCK_AT_ISO}
+      picksLockAtIso={picksLockAtIso}
     />
   );
 }

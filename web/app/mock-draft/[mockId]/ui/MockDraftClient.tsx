@@ -286,71 +286,27 @@ export default function MockDraftClient({
     <>
       {/* ── CSS variables + base styles ─────────────────────────────────── */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap');
-
-        /* ── Desktop: always light ── */
         .md-root {
-          --md-bg:      #f8f7f4;
+          --md-bg:      #ffffff;
           --md-surface: #ffffff;
-          --md-surface2:#f1f0ec;
-          --md-border:  rgba(0,0,0,0.08);
-          --md-border2: rgba(0,0,0,0.13);
-          --md-text1:   #111110;
-          --md-text2:   #44433f;
-          --md-text3:   #888780;
-          --md-navy:    #0b3a75;
-          --md-navy-lt: #e3effd;
-          --md-navy-tx: #0d47a1;
-          --md-score-bg:#e8f5e9;
-          --md-score-tx:#1b5e20;
-          --md-need-bg: #e8f5e9;
-          --md-need-tx: #1b5e20;
+          --md-surface2:#f9fafb;
+          --md-border:  #e5e7eb;
+          --md-border2: #d1d5db;
+          --md-text1:   #111827;
+          --md-text2:   #374151;
+          --md-text3:   #6b7280;
+          --md-navy:    #111827;
+          --md-navy-lt: #eff6ff;
+          --md-navy-tx: #2563eb;
+          --md-score-bg:#f0fdf4;
+          --md-score-tx:#15803d;
+          --md-need-bg: #f0fdf4;
+          --md-need-tx: #15803d;
 
-          font-family: 'DM Sans', system-ui, sans-serif;
+          font-family: system-ui, sans-serif;
           background: var(--md-bg);
           color: var(--md-text1);
           min-height: 100vh;
-        }
-
-        /* ── Mobile: follow system preference ── */
-        @media (max-width: 767px) {
-          .md-root {
-            --md-bg:      #f8f7f4;
-            --md-surface: #ffffff;
-            --md-surface2:#f1f0ec;
-            --md-border:  rgba(0,0,0,0.08);
-            --md-border2: rgba(0,0,0,0.13);
-            --md-text1:   #111110;
-            --md-text2:   #44433f;
-            --md-text3:   #888780;
-            --md-navy:    #0b3a75;
-            --md-navy-lt: #e3effd;
-            --md-navy-tx: #0d47a1;
-            --md-score-bg:#e8f5e9;
-            --md-score-tx:#1b5e20;
-            --md-need-bg: #e8f5e9;
-            --md-need-tx: #1b5e20;
-          }
-
-          @media (prefers-color-scheme: dark) {
-            .md-root {
-              --md-bg:      #161b27;
-              --md-surface: #1e2535;
-              --md-surface2:#242c3d;
-              --md-border:  rgba(255,255,255,0.07);
-              --md-border2: rgba(255,255,255,0.12);
-              --md-text1:   #ecedf0;
-              --md-text2:   #9aa3b8;
-              --md-text3:   #606880;
-              --md-navy:    #2255a8;
-              --md-navy-lt: #1a2b4a;
-              --md-navy-tx: #90b8f0;
-              --md-score-bg:#1a2d1e;
-              --md-score-tx:#7ec88a;
-              --md-need-bg: #1a2d1e;
-              --md-need-tx: #7ec88a;
-            }
-          }
         }
 
         /* ── Sticky top nav ── */
@@ -358,8 +314,8 @@ export default function MockDraftClient({
           position: sticky;
           top: 0;
           z-index: 50;
-          background: var(--md-surface);
-          border-bottom: 1px solid var(--md-border);
+          background: #111827;
+          border-bottom: none;
           padding: 12px 20px;
           display: flex;
           align-items: center;
@@ -369,30 +325,31 @@ export default function MockDraftClient({
 
         .md-back {
           font-size: 13px;
-          color: var(--md-text3);
+          color: #9ca3af;
           text-decoration: none;
           display: flex;
           align-items: center;
           gap: 4px;
           transition: color 0.15s;
+          font-weight: 600;
         }
-        .md-back:hover { color: var(--md-text1); }
+        .md-back:hover { color: #ffffff; }
 
         .md-title {
-          font-size: 17px;
-          font-weight: 700;
-          color: var(--md-text1);
+          font-size: 16px;
+          font-weight: 800;
+          color: #ffffff;
           line-height: 1.1;
         }
         .md-subtitle {
-          font-size: 12px;
-          color: var(--md-text3);
+          font-size: 11px;
+          color: #9ca3af;
           margin-top: 1px;
         }
 
         .md-score-pill {
-          background: var(--md-score-bg);
-          color: var(--md-score-tx);
+          background: rgba(255,255,255,0.12);
+          color: #ffffff;
           font-weight: 700;
           font-size: 13px;
           border-radius: 20px;
@@ -401,43 +358,38 @@ export default function MockDraftClient({
         }
 
         .md-btn {
-          background: var(--md-surface2);
-          border: 1px solid var(--md-border);
+          background: rgba(255,255,255,0.1);
+          border: 1px solid rgba(255,255,255,0.2);
           border-radius: 8px;
           padding: 6px 12px;
           font-size: 12px;
           font-weight: 600;
-          color: var(--md-text2);
+          color: #ffffff;
           cursor: pointer;
           transition: background 0.15s;
           white-space: nowrap;
         }
-        .md-btn:hover { background: var(--md-border); }
+        .md-btn:hover { background: rgba(255,255,255,0.18); }
         .md-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
         .md-error {
           margin: 8px 16px;
-          background: #fde8e8;
-          border: 1px solid #f5c6c6;
+          background: #fef2f2;
+          border: 1px solid #fecaca;
           border-radius: 8px;
           padding: 10px 14px;
           font-size: 13px;
-          color: #b71c1c;
-        }
-        @media (prefers-color-scheme: dark) {
-          @media (max-width: 767px) {
-            .md-error { background: #2d1a1a; border-color: #5c2c2c; color: #f48fb1; }
-          }
+          color: #dc2626;
         }
 
         .md-locked-banner {
           margin: 8px 16px;
-          background: #fff8e1;
-          border: 1px solid #ffe082;
+          background: #fffbeb;
+          border: 1px solid #fde68a;
           border-radius: 8px;
           padding: 8px 14px;
           font-size: 12px;
-          color: #e65100;
+          color: #92400e;
         }
 
         /* ── Desktop 3-col layout ── */
@@ -492,7 +444,7 @@ export default function MockDraftClient({
           font-size: 10px; font-weight: 700;
           color: var(--md-text3);
           flex-shrink: 0;
-          font-family: 'DM Mono', monospace;
+          font-family: monospace;
         }
         .md-pick-num.active { background: var(--md-navy); color: #fff; }
         .md-pick-num.filled { background: var(--md-score-bg); color: var(--md-score-tx); }
@@ -531,7 +483,7 @@ export default function MockDraftClient({
           margin-top: 2px;
         }
         .md-clock-pick {
-          font-family: 'DM Mono', monospace;
+          font-family: monospace;
           font-size: 13px;
           color: rgba(255,255,255,0.7);
           text-align: right;
@@ -614,7 +566,7 @@ export default function MockDraftClient({
           flex-shrink: 0;
         }
         .md-rank {
-          font-family: 'DM Mono', monospace;
+          font-family: monospace;
           font-size: 12px;
           font-weight: 500;
           color: var(--md-text3);
@@ -671,7 +623,7 @@ export default function MockDraftClient({
           border-radius: 5px;
           display: flex; align-items: center; justify-content: center;
           font-size: 9px; font-weight: 700;
-          font-family: 'DM Mono', monospace;
+          font-family: monospace;
           flex-shrink: 0;
         }
         .md-score-badge {
@@ -1271,7 +1223,7 @@ export default function MockDraftClient({
                         width: 28, height: 28, borderRadius: 7,
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 10, fontWeight: 700, flexShrink: 0,
-                        fontFamily: "'DM Mono', monospace",
+                        fontFamily: "monospace",
                         background: p.player_id ? sm.bg : "var(--md-surface2)",
                         color: p.player_id ? sm.text : "var(--md-text3)",
                       }}>
