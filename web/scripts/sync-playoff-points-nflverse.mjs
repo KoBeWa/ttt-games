@@ -1,14 +1,11 @@
 // scripts/sync-playoff-points-nflverse.mjs
-import "dotenv/config";
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { parseCsv, loadEnvLocal } from "./lib/csv.mjs";
+import { parseCsv, chunkUpsert, loadEnvLocal, createSupabaseAdminClient } from "./lib/csv.mjs";
 
 loadEnvLocal();
-
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createSupabaseAdminClient();
 
 // Default: nflverse weekly stats (season 2025) – you gave the correct URL
 const DEFAULT_NFLVERSE_WEEK_CSV =
@@ -25,15 +22,6 @@ function arg(name, def = null) {
 const YEAR = parseInt(arg("year", "2025"), 10);
 const SCORING = (arg("scoring", "ppr") || "ppr").toLowerCase(); // "ppr" or "std"
 const CSV_URL = arg("url", process.env.NFLVERSE_WEEK_STATS_URL || DEFAULT_NFLVERSE_WEEK_CSV);
-
-function mustEnv(ok, msg) {
-  if (!ok) {
-    console.error(msg);
-    process.exit(1);
-  }
-}
-
-mustEnv(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY, "Missing env: SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY");
 
 async function fetchText(url) {
   const res = await fetch(url);
@@ -107,25 +95,6 @@ function buildGsisToSleeperIdMap(sleeperPlayersObj) {
     if (gsis) map.set(String(gsis), String(sleeperId));
   }
   return map;
-}
-
-async function supabaseUpsert(table, rows, onConflict) {
-  const url = `${SUPABASE_URL}/rest/v1/${table}?on_conflict=${encodeURIComponent(onConflict)}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      apikey: SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "resolution=merge-duplicates,return=minimal",
-    },
-    body: JSON.stringify(rows),
-  });
-
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`${table} upsert failed: ${res.status} ${txt}`);
-  }
 }
 
 async function main() {
@@ -203,7 +172,7 @@ async function main() {
     };
   });
 
-  await supabaseUpsert("playoff_player_points", upserts, "season,round,player_id");
+  await chunkUpsert(supabase, "playoff_player_points", upserts, "season,round,player_id");
   console.log(`Upserted rows: ${upserts.length}`);
   console.log("Done.");
 }
