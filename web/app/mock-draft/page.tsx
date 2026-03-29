@@ -109,11 +109,12 @@ export default async function MockDraftsPage() {
             {(leaderboard ?? []).length === 0 ? (
               <div className={styles.emptyText}>Noch keine Einträge.</div>
             ) : (
-              {!resultsReady && (
-                <div className={styles.pendingBanner}>
-                  🏈 Ergebnisse erscheinen sobald der echte Draft stattgefunden hat.
-                </div>
-              )}
+              <>
+                {!resultsReady && (
+                  <div className={styles.pendingBanner}>
+                    🏈 Ergebnisse erscheinen sobald der echte Draft stattgefunden hat.
+                  </div>
+                )}
               <table className={styles.table}>
                 <thead>
                   <tr>
@@ -144,6 +145,7 @@ export default async function MockDraftsPage() {
                   ))}
                 </tbody>
               </table>
+              </>
             )}
           </div>
         </div>
