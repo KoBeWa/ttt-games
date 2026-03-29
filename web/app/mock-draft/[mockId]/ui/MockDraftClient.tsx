@@ -10,6 +10,7 @@ type PickRow = {
   pick_no: number;
   team_id: string;
   player_id: string | null;
+  real_pick_no?: number | null;
   teams: { abbr: string; name: string; logo_url: string | null } | null;
   draft_players:
     | {
@@ -132,12 +133,18 @@ export default function MockDraftClient({
   teamNeeds,
   initialPlayers,
   picksLockAtIso,
+  isOwner,
+  resultsReady,
+  ownerUsername,
 }: {
   mock: Mock;
   initialPicks: PickRow[];
   teamNeeds: NeedRow[];
   initialPlayers: Player[];
   picksLockAtIso: string;
+  isOwner: boolean;
+  resultsReady: boolean;
+  ownerUsername?: string | null;
 }) {
   const supabase = createSupabaseBrowserClient();
 
@@ -165,12 +172,6 @@ export default function MockDraftClient({
     teamNeeds.forEach((n) => m.set(n.team_id, n.needs ?? []));
     return m;
   }, [teamNeeds]);
-
-  const playerById = useMemo(() => {
-    const m = new Map<string, Player>();
-    initialPlayers.forEach((p) => m.set(p.id, p));
-    return m;
-  }, [initialPlayers]);
 
   const currentPickRow = useMemo(
     () => picks.find((p) => p.pick_no === currentPick),
@@ -206,15 +207,14 @@ export default function MockDraftClient({
   }, [initialPlayers, pickedPlayerIds, pos, q]);
 
   const totalScore = useMemo(() => {
+    if (!resultsReady) return null;
     let sum = 0;
     picks.forEach((p) => {
       if (!p.player_id) return;
-      const pl = playerById.get(p.player_id);
-      if (!pl) return;
-      sum += scorePick(p.pick_no, pl.real_pick_no ?? null);
+      sum += scorePick(p.pick_no, p.real_pick_no ?? null);
     });
     return sum;
-  }, [picks, playerById]);
+  }, [picks, resultsReady]);
 
   const filledCount = picks.filter((p) => p.player_id).length;
   const totalCount  = picks.length;
@@ -226,7 +226,7 @@ export default function MockDraftClient({
   }
 
   async function selectPlayer(player: Player) {
-    if (!currentPickRow || picksLocked) {
+    if (!isOwner || !currentPickRow || picksLocked) {
       if (picksLocked) setMsg(`Picks gesperrt seit ${picksLockedLabel}.`);
       return;
     }
@@ -261,7 +261,7 @@ export default function MockDraftClient({
   }
 
   async function clearPick(pickNo: number) {
-    if (picksLocked) { setMsg(`Picks gesperrt seit ${picksLockedLabel}.`); return; }
+    if (!isOwner || picksLocked) { if (picksLocked) setMsg(`Picks gesperrt seit ${picksLockedLabel}.`); return; }
     setMsg(null);
     const prev = picks;
     const next = picks.map((p) =>
@@ -398,6 +398,7 @@ export default function MockDraftClient({
         }
         @media (min-width: 768px) {
           .md-desktop { display: grid; grid-template-columns: 240px 1fr 260px; height: calc(100vh - 57px); }
+          .md-desktop.readonly { grid-template-columns: 280px 1fr; }
         }
 
         /* ── Left panel ── */
@@ -835,18 +836,26 @@ export default function MockDraftClient({
         {/* ── Top Nav ── */}
         <div className="md-topnav">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Link href="/app" className="md-back">← zurück</Link>
-            <div style={{ width: 1, height: 20, background: "var(--md-border)" }} />
+            <Link href="/mock-draft" className="md-back">← Mock Draft</Link>
+            <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.15)" }} />
             <div>
               <div className="md-title">{mock.title}</div>
-              <div className="md-subtitle">Season {mock.season} · Round 1</div>
+              <div className="md-subtitle">
+                Season {mock.season} · Round 1
+                {!isOwner && ownerUsername ? ` · von ${ownerUsername}` : ""}
+                {!isOwner ? " · Ansicht" : ""}
+              </div>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div className="md-score-pill">Score: {totalScore}</div>
-            <button className="md-btn" onClick={nextUnfilled} disabled={picksLocked}>
-              Next ↓
-            </button>
+            {resultsReady && totalScore !== null && (
+              <div className="md-score-pill">Score: {totalScore}</div>
+            )}
+            {isOwner && (
+              <button className="md-btn" onClick={nextUnfilled} disabled={picksLocked}>
+                Next ↓
+              </button>
+            )}
           </div>
         </div>
 
@@ -860,7 +869,7 @@ export default function MockDraftClient({
         {/* ════════════════════════════════════════════════
             DESKTOP (≥768px)
         ════════════════════════════════════════════════ */}
-        <div className="md-desktop">
+        <div className={`md-desktop${!isOwner ? " readonly" : ""}`}>
 
           {/* Left: full pick board */}
           <div className="md-left">
@@ -868,8 +877,7 @@ export default function MockDraftClient({
             <div className="md-pick-list">
               {picks.map((p) => {
                 const isActive = p.pick_no === currentPick;
-                const pl       = p.player_id ? playerById.get(p.player_id) : null;
-                const score    = pl ? scorePick(p.pick_no, pl.real_pick_no ?? null) : 0;
+                const score    = resultsReady ? scorePick(p.pick_no, p.real_pick_no ?? null) : 0;
                 const sm       = scoreMeta(score);
                 const filled   = !!p.player_id;
 
@@ -889,7 +897,7 @@ export default function MockDraftClient({
                         color: isActive ? "var(--md-navy-tx)" : "var(--md-text1)",
                         whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                       }}>
-                        {p.draft_players?.full_name ?? (isActive ? "On the clock" : "Upcoming")}
+                        {p.draft_players?.full_name ?? (isActive && isOwner ? "On the clock" : "—")}
                       </div>
                       {p.draft_players && (
                         <div style={{ fontSize: 10, color: "var(--md-text3)" }}>
@@ -897,7 +905,7 @@ export default function MockDraftClient({
                         </div>
                       )}
                     </div>
-                    {filled && score > 0 && (
+                    {filled && resultsReady && score > 0 && (
                       <div style={{
                         fontSize: 10, fontWeight: 700,
                         background: sm.bg, color: sm.text,
@@ -907,7 +915,7 @@ export default function MockDraftClient({
                         +{score}
                       </div>
                     )}
-                    {filled && (
+                    {filled && isOwner && (
                       <button
                         onClick={(e) => { e.stopPropagation(); clearPick(p.pick_no); }}
                         disabled={picksLocked}
@@ -926,7 +934,7 @@ export default function MockDraftClient({
             </div>
           </div>
 
-          {/* Center: clock + player picker */}
+          {/* Center: clock + player picker (owner only) / results summary (read-only) */}
           <div className="md-center">
             {/* On the clock */}
             <div className="md-clock-header">
@@ -1008,16 +1016,27 @@ export default function MockDraftClient({
             </div>
           </div>
 
-          {/* Right: my picks + score */}
+          {/* Right: picks + score */}
           <div className="md-right">
-            <div className="md-panel-header">Meine Picks</div>
+            <div className="md-panel-header">{isOwner ? "Meine Picks" : "Picks"}</div>
 
             {/* Score summary */}
             <div className="md-score-card">
               <div>
-                <div style={{ fontSize: 11, color: "var(--md-text3)", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Gesamtscore</div>
-                <div className="md-score-total">{totalScore}</div>
-                <div style={{ fontSize: 11, color: "var(--md-text3)", marginTop: 2 }}>
+                {resultsReady ? (
+                  <>
+                    <div style={{ fontSize: 11, color: "var(--md-text3)", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Gesamtscore</div>
+                    <div className="md-score-total">{totalScore ?? 0}</div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 11, color: "var(--md-text3)", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Ergebnisse</div>
+                    <div style={{ fontSize: 13, color: "var(--md-text3)", marginTop: 4 }}>
+                      {picksLocked ? "Ausstehend — Punkte erscheinen nach dem echten Draft." : "Erscheinen nach dem Draft."}
+                    </div>
+                  </>
+                )}
+                <div style={{ fontSize: 11, color: "var(--md-text3)", marginTop: resultsReady ? 2 : 8 }}>
                   {filledCount} / {totalCount} Picks
                 </div>
                 <div className="md-progress-bar">
@@ -1029,8 +1048,7 @@ export default function MockDraftClient({
             <div className="md-mypicks-list">
               {picks.map((p) => {
                 const isActive = p.pick_no === currentPick;
-                const pl       = p.player_id ? playerById.get(p.player_id) : null;
-                const score    = pl ? scorePick(p.pick_no, pl.real_pick_no ?? null) : 0;
+                const score    = resultsReady ? scorePick(p.pick_no, p.real_pick_no ?? null) : 0;
                 const sm       = scoreMeta(score);
 
                 return (
@@ -1041,7 +1059,7 @@ export default function MockDraftClient({
                   >
                     <div
                       className="md-mypick-num"
-                      style={p.player_id
+                      style={p.player_id && resultsReady
                         ? { background: sm.bg, color: sm.text }
                         : { background: "var(--md-surface2)", color: "var(--md-text3)" }}
                     >
@@ -1053,7 +1071,7 @@ export default function MockDraftClient({
                         color: "var(--md-text1)",
                         whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                       }}>
-                        {p.draft_players?.full_name ?? (isActive ? "On the clock" : "—")}
+                        {p.draft_players?.full_name ?? (isActive && isOwner ? "On the clock" : "—")}
                       </div>
                       {p.draft_players && (
                         <div style={{ fontSize: 10, color: "var(--md-text3)" }}>
@@ -1061,10 +1079,10 @@ export default function MockDraftClient({
                         </div>
                       )}
                     </div>
-                    {p.player_id && score > 0 && (
+                    {p.player_id && resultsReady && score > 0 && (
                       <div className="md-score-badge" style={{ color: sm.text }}>+{score}</div>
                     )}
-                    {p.player_id && (
+                    {p.player_id && isOwner && (
                       <button
                         onClick={(e) => { e.stopPropagation(); clearPick(p.pick_no); }}
                         disabled={picksLocked}
@@ -1195,8 +1213,17 @@ export default function MockDraftClient({
                 flexShrink: 0,
               }}>
                 <div>
-                  <div style={{ fontSize: 11, color: "var(--md-text3)", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Gesamtscore</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: "var(--md-score-tx)", lineHeight: 1.1 }}>{totalScore}</div>
+                  {resultsReady ? (
+                    <>
+                      <div style={{ fontSize: 11, color: "var(--md-text3)", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Gesamtscore</div>
+                      <div style={{ fontSize: 28, fontWeight: 700, color: "var(--md-score-tx)", lineHeight: 1.1 }}>{totalScore ?? 0}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 11, color: "var(--md-text3)", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Ergebnisse</div>
+                      <div style={{ fontSize: 13, color: "var(--md-text3)", marginTop: 4 }}>Ausstehend</div>
+                    </>
+                  )}
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 11, color: "var(--md-text3)" }}>{filledCount} / {totalCount} Picks</div>
@@ -1209,23 +1236,22 @@ export default function MockDraftClient({
               <div className="md-mobile-picks">
                 {picks.map((p) => {
                   const isActive = p.pick_no === currentPick;
-                  const pl       = p.player_id ? playerById.get(p.player_id) : null;
-                  const score    = pl ? scorePick(p.pick_no, pl.real_pick_no ?? null) : 0;
+                  const score    = resultsReady ? scorePick(p.pick_no, p.real_pick_no ?? null) : 0;
                   const sm       = scoreMeta(score);
 
                   return (
                     <div
                       key={p.pick_no}
                       className={`md-mobile-pick-card ${isActive ? "active" : ""}`}
-                      onClick={() => { setCurrentPick(p.pick_no); setMobileTab("board"); }}
+                      onClick={() => { setCurrentPick(p.pick_no); if (isOwner) setMobileTab("board"); }}
                     >
                       <div style={{
                         width: 28, height: 28, borderRadius: 7,
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 10, fontWeight: 700, flexShrink: 0,
                         fontFamily: "monospace",
-                        background: p.player_id ? sm.bg : "var(--md-surface2)",
-                        color: p.player_id ? sm.text : "var(--md-text3)",
+                        background: p.player_id && resultsReady ? sm.bg : "var(--md-surface2)",
+                        color: p.player_id && resultsReady ? sm.text : "var(--md-text3)",
                       }}>
                         {p.pick_no}
                       </div>
@@ -1235,7 +1261,7 @@ export default function MockDraftClient({
                           fontSize: 13, fontWeight: 600, color: "var(--md-text1)",
                           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                         }}>
-                          {p.draft_players?.full_name ?? (isActive ? "← Jetzt draften" : "Offen")}
+                          {p.draft_players?.full_name ?? (isActive && isOwner ? "← Jetzt draften" : "Offen")}
                         </div>
                         {p.draft_players && (
                           <div style={{ fontSize: 11, color: "var(--md-text3)" }}>
@@ -1243,12 +1269,12 @@ export default function MockDraftClient({
                           </div>
                         )}
                       </div>
-                      {p.player_id && score > 0 && (
+                      {p.player_id && resultsReady && score > 0 && (
                         <div style={{ fontSize: 13, fontWeight: 700, color: sm.text, flexShrink: 0 }}>
                           +{score}
                         </div>
                       )}
-                      {p.player_id && (
+                      {p.player_id && isOwner && (
                         <button
                           className="md-mobile-clear"
                           onClick={(e) => { e.stopPropagation(); clearPick(p.pick_no); }}

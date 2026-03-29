@@ -50,6 +50,13 @@ export default async function MockDraftsPage() {
     return <div className={styles.error}>Fehler beim Laden des Rankings: {lbErr.message}</div>;
   }
 
+  // Results are "ready" when real_draft_picks has data for any of the seasons in use
+  const usedSeasons = Array.from(new Set((leaderboard ?? []).map((r: { season: number }) => r.season)));
+  const { count: realPickCount } = usedSeasons.length > 0
+    ? await supabase.from("real_draft_picks").select("*", { count: "exact", head: true }).in("season", usedSeasons)
+    : { count: 0 };
+  const resultsReady = (realPickCount ?? 0) > 0;
+
   return (
     <div className={styles.page}>
       {/* Top bar */}
@@ -102,6 +109,11 @@ export default async function MockDraftsPage() {
             {(leaderboard ?? []).length === 0 ? (
               <div className={styles.emptyText}>Noch keine Einträge.</div>
             ) : (
+              {!resultsReady && (
+                <div className={styles.pendingBanner}>
+                  🏈 Ergebnisse erscheinen sobald der echte Draft stattgefunden hat.
+                </div>
+              )}
               <table className={styles.table}>
                 <thead>
                   <tr>
@@ -110,6 +122,7 @@ export default async function MockDraftsPage() {
                     <th>Mock</th>
                     <th>Season</th>
                     <th>Punkte</th>
+                    {resultsReady && <th></th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -119,7 +132,14 @@ export default async function MockDraftsPage() {
                       <td className={styles.usernameCell}>{row.username}</td>
                       <td>{row.title}</td>
                       <td>{row.season}</td>
-                      <td className={styles.pointsCell}>{row.points}</td>
+                      <td className={styles.pointsCell}>{resultsReady ? row.points : "—"}</td>
+                      {resultsReady && (
+                        <td>
+                          <Link href={`/mock-draft/${row.mock_id}`} className={styles.viewLink}>
+                            Ansehen →
+                          </Link>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
