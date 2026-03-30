@@ -84,7 +84,7 @@ function SchoolAvatar({ name, logoUrl, size = 36 }: { name: string; logoUrl: str
   if (logoUrl && !broken) {
     return <img src={logoUrl} alt={name} width={size} height={size} onError={() => setBroken(true)}
       style={{ width: size, height: size, borderRadius: "50%", objectFit: "contain", flexShrink: 0,
-        background: "rgba(201,168,76,0.05)", border: "1px solid rgba(201,168,76,0.12)" }} />;
+        background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.12)" }} />;
   }
   return (
     <div style={{ width: size, height: size, borderRadius: "50%", background: `${color}22`,
@@ -211,12 +211,12 @@ export default function MockDraftClient({
             <div key={p.pick_no} onClick={() => setCurrentPick(p.pick_no)}
               style={{
                 display: "flex", alignItems: "center", gap: 10, padding: "9px 14px",
-                cursor: "pointer", borderBottom: "1px solid rgba(201,168,76,0.05)",
+                cursor: "pointer", borderBottom: "1px solid rgba(201,168,76,0.08)",
                 background: isActive ? "rgba(251,191,36,0.06)" : "transparent",
                 borderLeft: isActive ? "3px solid #c9a84c" : "3px solid transparent",
                 transition: "background 0.1s",
               }}
-              onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "rgba(201,168,76,0.04)"; }}
+              onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "rgba(201,168,76,0.06)"; }}
               onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
             >
               <div style={{ width: 28, height: 28, borderRadius: 7, background: numBg, color: numColor,
@@ -267,7 +267,7 @@ export default function MockDraftClient({
     return (
       <>
         {/* On the clock */}
-        <div style={{ background: "rgba(201,168,76,0.04)", borderBottom: "1px solid rgba(201,168,76,0.1)",
+        <div style={{ background: "#252525", borderBottom: "1px solid rgba(201,168,76,0.2)",
           padding: "16px 20px", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             {team?.logo_url && (
@@ -314,7 +314,7 @@ export default function MockDraftClient({
         <div style={{ padding: "10px 16px 0", flexShrink: 0 }}>
           <input value={q} onChange={(e) => setQ(e.target.value)}
             placeholder="Spieler suchen…"
-            style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(201,168,76,0.12)",
+            style={{ width: "100%", background: "#2a2a2a", border: "1px solid rgba(201,168,76,0.2)",
               borderRadius: 10, padding: "9px 14px", fontSize: 13, color: "#f0ede4",
               outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
         </div>
@@ -347,9 +347,9 @@ export default function MockDraftClient({
             return (
               <div key={p.id}
                 style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px",
-                  borderBottom: "1px solid rgba(201,168,76,0.05)", cursor: "pointer",
+                  borderBottom: "1px solid rgba(201,168,76,0.08)", cursor: "pointer",
                   transition: "background 0.1s" }}
-                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(201,168,76,0.04)"}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(201,168,76,0.06)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
               >
                 <SchoolAvatar name={p.school} logoUrl={p.college_logo_url} size={38} />
@@ -376,7 +376,7 @@ export default function MockDraftClient({
                   #{p.rank_overall}
                 </div>
                 <button onClick={() => selectPlayer(p)} disabled={picksLocked}
-                  style={{ background: picksLocked ? "rgba(201,168,76,0.05)" : "#c9a84c",
+                  style={{ background: picksLocked ? "rgba(201,168,76,0.08)" : "#c9a84c",
                     color: picksLocked ? "#6b5a30" : "#fff", border: "none", borderRadius: 8,
                     padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: picksLocked ? "not-allowed" : "pointer",
                     flexShrink: 0, fontFamily: "inherit", transition: "opacity 0.12s" }}
@@ -397,7 +397,7 @@ export default function MockDraftClient({
   function ScorePanel() {
     return (
       <>
-        <div style={{ padding: "16px 14px 12px", borderBottom: "1px solid rgba(201,168,76,0.1)", flexShrink: 0 }}>
+        <div style={{ padding: "16px 14px 12px", borderBottom: "1px solid rgba(201,168,76,0.14)", flexShrink: 0 }}>
           <div style={{ fontSize: 10, fontWeight: 800, color: "#6b5a30", letterSpacing: 1.5,
             textTransform: "uppercase", marginBottom: 12 }}>
             {isOwner ? "Dein Draft" : ownerUsername ? `Draft von ${ownerUsername}` : "Draft"}
@@ -410,14 +410,14 @@ export default function MockDraftClient({
                 {filledCount}/{picks.length}
               </span>
             </div>
-            <div style={{ height: 5, background: "rgba(201,168,76,0.1)", borderRadius: 3, overflow: "hidden" }}>
+            <div style={{ height: 5, background: "rgba(201,168,76,0.14)", borderRadius: 3, overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${pct}%`, background: "#c9a84c",
                 borderRadius: 3, transition: "width 0.4s ease" }} />
             </div>
           </div>
           {/* Score */}
           {resultsReady ? (
-            <div style={{ background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.25)",
+            <div style={{ background: "#2a2a2a", border: "1px solid rgba(201,168,76,0.3)",
               borderRadius: 10, padding: "12px 14px" }}>
               <div style={{ fontSize: 10, fontWeight: 800, color: "#c9a84c", letterSpacing: 1, textTransform: "uppercase" }}>
                 Gesamtscore
@@ -428,7 +428,7 @@ export default function MockDraftClient({
               <div style={{ fontSize: 11, color: "#8a7a5a", marginTop: 4 }}>Punkte</div>
             </div>
           ) : (
-            <div style={{ background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.12)",
+            <div style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.12)",
               borderRadius: 10, padding: "12px 14px" }}>
               <div style={{ fontSize: 11, color: "#6b5a30" }}>
                 {picksLocked
@@ -452,11 +452,11 @@ export default function MockDraftClient({
                   cursor: "pointer", transition: "background 0.1s",
                   background: isActive ? "rgba(251,191,36,0.06)" : "transparent",
                   borderLeft: isActive ? "3px solid #c9a84c" : "3px solid transparent" }}
-                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "rgba(201,168,76,0.04)"; }}
+                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "rgba(201,168,76,0.06)"; }}
                 onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
               >
                 <div style={{ width: 22, height: 22, borderRadius: 5,
-                  background: filled && resultsReady ? ss.bg : filled ? "rgba(52,211,153,0.12)" : "rgba(201,168,76,0.05)",
+                  background: filled && resultsReady ? ss.bg : filled ? "rgba(52,211,153,0.12)" : "rgba(201,168,76,0.08)",
                   color: filled && resultsReady ? ss.text : filled ? "#c9a84c" : "#6b5a30",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 9, fontWeight: 800, fontFamily: "monospace", flexShrink: 0 }}>
@@ -499,20 +499,21 @@ export default function MockDraftClient({
       <style>{`
         .md-root {
           font-family: system-ui, -apple-system, sans-serif;
-          background: #0f0f0f;
+          background: #1c1c1e;
           color: #f0ede4;
           min-height: 100vh;
         }
         .md-topbar {
           position: sticky; top: 0; z-index: 50;
-          background: #111111;
-          border-bottom: 1px solid rgba(201,168,76,0.18);
+          background: #242424;
+          border-bottom: 1px solid rgba(201,168,76,0.22);
           padding: 0 20px;
           height: 52px;
           display: flex; align-items: center;
           justify-content: space-between; gap: 16px;
         }
         .md-desktop { display: none; }
+        .md-panel-bg { background: #212121; }
         @media (min-width: 768px) {
           .md-desktop {
             display: grid;
@@ -524,14 +525,14 @@ export default function MockDraftClient({
         }
         .md-panel {
           display: flex; flex-direction: column; overflow: hidden;
-          border-right: 1px solid rgba(201,168,76,0.1);
+          border-right: 1px solid rgba(201,168,76,0.14);
         }
-        .md-panel:last-child { border-right: none; border-left: 1px solid rgba(201,168,76,0.1); }
+        .md-panel:last-child { border-right: none; border-left: 1px solid rgba(201,168,76,0.14); }
         .md-panel-header {
           padding: 10px 14px;
           font-size: 10px; font-weight: 800; color: #6b5a30;
           letter-spacing: 1.5px; text-transform: uppercase;
-          border-bottom: 1px solid rgba(201,168,76,0.1);
+          border-bottom: 1px solid rgba(201,168,76,0.14);
           flex-shrink: 0;
         }
         .md-mobile {
@@ -539,8 +540,8 @@ export default function MockDraftClient({
           height: calc(100vh - 52px);
         }
         .md-tabs {
-          display: flex; background: #111111;
-          border-bottom: 1px solid rgba(201,168,76,0.15);
+          display: flex; background: #242424;
+          border-bottom: 1px solid rgba(201,168,76,0.2);
           flex-shrink: 0;
         }
         .md-tab {
@@ -599,7 +600,7 @@ export default function MockDraftClient({
             )}
             {isOwner && !picksLocked && (
               <button onClick={nextUnfilled}
-                style={{ background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.18)",
+                style={{ background: "rgba(201,168,76,0.14)", border: "1px solid rgba(201,168,76,0.18)",
                   borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 600,
                   color: "#f0ede4", cursor: "pointer", fontFamily: "inherit" }}>
                 Weiter ↓
