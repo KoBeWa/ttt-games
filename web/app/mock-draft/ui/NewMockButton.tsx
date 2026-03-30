@@ -33,8 +33,8 @@ export default function NewMockButton({ seasons, canCreate }: { seasons: number[
   return (
     <div style={{ position: "relative" }}>
       <button onClick={() => setOpen((v) => !v)}
-        style={{ background: "#ffffff", color: "#111827", border: "none",
-          borderRadius: 10, padding: "9px 18px", fontSize: 13, fontWeight: 700,
+        style={{ background: "#c9a84c", color: "#111111", border: "none",
+          borderRadius: 10, padding: "9px 18px", fontSize: 13, fontWeight: 800,
           cursor: "pointer", whiteSpace: "nowrap" }}>
         + Neuer Mock Draft
       </button>
@@ -79,8 +79,8 @@ export default function NewMockButton({ seasons, canCreate }: { seasons: number[
             )}
 
             <button onClick={createMock} disabled={loading || seasons.length === 0}
-              style={{ width: "100%", background: "#111827", color: "#fff", border: "none",
-                borderRadius: 10, padding: "11px 0", fontSize: 14, fontWeight: 700,
+              style={{ width: "100%", background: "#c9a84c", color: "#111111", border: "none",
+                borderRadius: 10, padding: "11px 0", fontSize: 14, fontWeight: 800,
                 cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1, fontFamily: "inherit" }}>
               {loading ? "Erstelle…" : "Draft erstellen"}
             </button>
