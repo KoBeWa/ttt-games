@@ -5,25 +5,15 @@ import { useMemo, useRef, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Mock = { id: string; season: number; title: string };
-
 type PickRow = {
   pick_no: number;
   team_id: string;
   player_id: string | null;
+  real_pick_no?: number | null;
   teams: { abbr: string; name: string; logo_url: string | null } | null;
-  draft_players:
-    | {
-        full_name: string;
-        position: string;
-        school: string;
-        rank_overall: number;
-        college_logo_url?: string | null;
-      }
-    | null;
+  draft_players: { full_name: string; position: string; school: string; rank_overall: number; college_logo_url?: string | null } | null;
 };
-
 type NeedRow = { team_id: string; needs: string[] };
-
 type Player = {
   id: string;
   full_name: string;
@@ -35,7 +25,7 @@ type Player = {
   real_pick_no?: number | null;
 };
 
-// ─── Scoring ─────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 function scorePick(mockPick: number, realPick: number | null | undefined) {
   if (realPick == null) return 0;
   const diff = Math.abs(mockPick - realPick);
@@ -45,81 +35,61 @@ function scorePick(mockPick: number, realPick: number | null | undefined) {
   return 0;
 }
 
-type ScoreMeta = { label: string; bg: string; text: string; dot: string };
-function scoreMeta(score: number): ScoreMeta {
-  if (score === 100) return { label: "Perfect", bg: "#e8f5e9", text: "#1b5e20", dot: "#2e7d32" };
-  if (score === 50)  return { label: "±1",      bg: "#fff3e0", text: "#bf360c", dot: "#ef6c00" };
-  if (score === 20)  return { label: "≤5",       bg: "#e3f0fc", text: "#0d47a1", dot: "#1565c0" };
-  return { label: "—", bg: "transparent", text: "#999", dot: "#ccc" };
+function scoreStyle(score: number) {
+  if (score === 100) return { bg: "rgba(52,211,153,0.18)", text: "#34d399", label: "Exact", border: "rgba(52,211,153,0.3)" };
+  if (score === 50)  return { bg: "rgba(251,191,36,0.18)",  text: "#fbbf24", label: "±1",   border: "rgba(251,191,36,0.3)" };
+  if (score === 20)  return { bg: "rgba(129,140,248,0.18)", text: "#818cf8", label: "≤5",   border: "rgba(129,140,248,0.3)" };
+  return { bg: "rgba(255,255,255,0.04)", text: "#4a5068", label: "—", border: "transparent" };
+}
+
+function posColor(pos: string) {
+  const p = (pos ?? "").toUpperCase();
+  if (p === "QB") return "#ef4444";
+  if (["WR"].includes(p)) return "#3b82f6";
+  if (p === "TE") return "#a855f7";
+  if (p === "RB") return "#22c55e";
+  if (["OT","OL","OG","C","IOL"].includes(p)) return "#f59e0b";
+  if (["EDGE","DE"].includes(p)) return "#06b6d4";
+  if (["DT","DL","NT"].includes(p)) return "#0ea5e9";
+  if (["CB"].includes(p)) return "#ec4899";
+  if (["S","FS","SS","DB"].includes(p)) return "#d946ef";
+  if (["LB","ILB","OLB"].includes(p)) return "#84cc16";
+  return "#6b7280";
 }
 
 function initials(name?: string) {
   if (!name) return "?";
   const p = name.split(" ").filter(Boolean);
-  if (p.length === 1) return p[0].slice(0, 2).toUpperCase();
-  return (p[0][0] + p[p.length - 1][0]).toUpperCase();
+  return p.length === 1 ? p[0].slice(0, 2).toUpperCase() : (p[0][0] + p[p.length - 1][0]).toUpperCase();
 }
 
-// ─── Small Components ─────────────────────────────────────────────────────────
-function TeamLogo({ team, size = 28 }: { team: PickRow["teams"]; size?: number }) {
+// ─── Sub-components ───────────────────────────────────────────────────────────
+function TeamLogo({ team, size = 32 }: { team: PickRow["teams"]; size?: number }) {
   if (team?.logo_url) {
-    return (
-      <img
-        src={team.logo_url}
-        alt={team.abbr}
-        width={size}
-        height={size}
-        loading="lazy"
-        style={{ width: size, height: size, objectFit: "contain", flexShrink: 0 }}
-      />
-    );
+    return <img src={team.logo_url} alt={team.abbr} width={size} height={size}
+      style={{ width: size, height: size, objectFit: "contain", flexShrink: 0 }} />;
   }
   return (
-    <div
-      style={{
-        width: size, height: size, borderRadius: 6,
-        background: "var(--md-surface2)", display: "flex",
-        alignItems: "center", justifyContent: "center",
-        fontSize: 9, fontWeight: 700, color: "var(--md-text3)",
-        flexShrink: 0,
-      }}
-    >
-      {team?.abbr ?? "—"}
+    <div style={{ width: size, height: size, borderRadius: 6, background: "rgba(255,255,255,0.06)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: size * 0.32, fontWeight: 700, color: "#4a5068", flexShrink: 0 }}>
+      {team?.abbr?.slice(0, 3) ?? "—"}
     </div>
   );
 }
 
-function Avatar({ name, logoUrl, size = 36 }: { name: string; logoUrl: string | null; size?: number }) {
+function SchoolAvatar({ name, logoUrl, size = 36 }: { name: string; logoUrl: string | null; size?: number }) {
   const [broken, setBroken] = useState(false);
+  const color = posColor(name.slice(0, 2));
   if (logoUrl && !broken) {
-    return (
-      <img
-        src={logoUrl}
-        alt={name}
-        width={size}
-        height={size}
-        loading="lazy"
-        onError={() => setBroken(true)}
-        style={{
-          width: size, height: size, borderRadius: "50%",
-          objectFit: "contain", flexShrink: 0,
-          background: "var(--md-surface2)",
-          border: "1px solid var(--md-border)",
-        }}
-      />
-    );
+    return <img src={logoUrl} alt={name} width={size} height={size} onError={() => setBroken(true)}
+      style={{ width: size, height: size, borderRadius: "50%", objectFit: "contain", flexShrink: 0,
+        background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }} />;
   }
   return (
-    <div
-      style={{
-        width: size, height: size, borderRadius: "50%",
-        background: "var(--md-surface2)",
-        border: "1px solid var(--md-border)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: size * 0.33, fontWeight: 700,
-        color: "var(--md-text2)", flexShrink: 0,
-      }}
-    >
+    <div style={{ width: size, height: size, borderRadius: "50%", background: `${color}22`,
+      border: `1px solid ${color}44`, display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: size * 0.33, fontWeight: 700, color, flexShrink: 0 }}>
       {initials(name)}
     </div>
   );
@@ -127,106 +97,71 @@ function Avatar({ name, logoUrl, size = 36 }: { name: string; logoUrl: string | 
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function MockDraftClient({
-  mock,
-  initialPicks,
-  teamNeeds,
-  initialPlayers,
-  picksLockAtIso,
+  mock, initialPicks, teamNeeds, initialPlayers, picksLockAtIso,
+  isOwner, resultsReady, ownerUsername,
 }: {
   mock: Mock;
   initialPicks: PickRow[];
   teamNeeds: NeedRow[];
   initialPlayers: Player[];
   picksLockAtIso: string;
+  isOwner: boolean;
+  resultsReady: boolean;
+  ownerUsername?: string | null;
 }) {
   const supabase = createSupabaseBrowserClient();
-
-  const [picks, setPicks]           = useState<PickRow[]>(initialPicks);
+  const [picks, setPicks] = useState<PickRow[]>(initialPicks);
   const [currentPick, setCurrentPick] = useState<number>(
     () => initialPicks.find((p) => !p.player_id)?.pick_no ?? 1
   );
-  const [q, setQ]         = useState("");
-  const [pos, setPos]     = useState("ALL");
-  const [msg, setMsg]     = useState<string | null>(null);
-  // mobile tab: "board" | "mypicks"
-  const [mobileTab, setMobileTab] = useState<"board" | "mypicks">("board");
-
-  const [nowTs]    = useState(() => Date.now());
+  const [q, setQ] = useState("");
+  const [pos, setPos] = useState("ALL");
+  const [msg, setMsg] = useState<string | null>(null);
+  const [mobileTab, setMobileTab] = useState<"board" | "draft" | "picks">("draft");
+  const [nowTs] = useState(() => Date.now());
   const picksLocked = nowTs >= Date.parse(picksLockAtIso);
-  const picksLockedLabel = new Date(picksLockAtIso).toLocaleString("de-DE", {
-    timeZone: "Europe/Berlin",
-  });
-
+  const picksLockedLabel = new Date(picksLockAtIso).toLocaleString("de-DE", { timeZone: "Europe/Berlin" });
   const playerListRef = useRef<HTMLDivElement>(null);
 
-  // ── Derived ──
   const needsMap = useMemo(() => {
     const m = new Map<string, string[]>();
     teamNeeds.forEach((n) => m.set(n.team_id, n.needs ?? []));
     return m;
   }, [teamNeeds]);
 
-  const playerById = useMemo(() => {
-    const m = new Map<string, Player>();
-    initialPlayers.forEach((p) => m.set(p.id, p));
-    return m;
-  }, [initialPlayers]);
-
-  const currentPickRow = useMemo(
-    () => picks.find((p) => p.pick_no === currentPick),
-    [picks, currentPick]
-  );
-
+  const currentPickRow = useMemo(() => picks.find((p) => p.pick_no === currentPick), [picks, currentPick]);
   const currentNeeds = useMemo(
     () => (currentPickRow ? (needsMap.get(currentPickRow.team_id) ?? []) : []),
     [needsMap, currentPickRow]
   );
-
   const pickedPlayerIds = useMemo(
     () => new Set(picks.filter((p) => p.player_id).map((p) => p.player_id!)),
     [picks]
   );
-
   const positions = useMemo(() => {
     const s = new Set<string>();
     initialPlayers.forEach((p) => s.add(p.position));
     return ["ALL", ...Array.from(s).sort()];
   }, [initialPlayers]);
-
   const availablePlayers = useMemo(() => {
     return initialPlayers
       .filter((p) => !pickedPlayerIds.has(p.id))
       .filter((p) => pos === "ALL" || p.position === pos)
-      .filter((p) => {
-        if (!q.trim()) return true;
-        return `${p.full_name} ${p.school} ${p.position}`
-          .toLowerCase()
-          .includes(q.toLowerCase());
-      });
+      .filter((p) => !q.trim() || `${p.full_name} ${p.school} ${p.position}`.toLowerCase().includes(q.toLowerCase()));
   }, [initialPlayers, pickedPlayerIds, pos, q]);
-
   const totalScore = useMemo(() => {
-    let sum = 0;
-    picks.forEach((p) => {
-      if (!p.player_id) return;
-      const pl = playerById.get(p.player_id);
-      if (!pl) return;
-      sum += scorePick(p.pick_no, pl.real_pick_no ?? null);
-    });
-    return sum;
-  }, [picks, playerById]);
-
+    if (!resultsReady) return null;
+    return picks.reduce((sum, p) => sum + (p.player_id ? scorePick(p.pick_no, p.real_pick_no ?? null) : 0), 0);
+  }, [picks, resultsReady]);
   const filledCount = picks.filter((p) => p.player_id).length;
-  const totalCount  = picks.length;
 
-  // ── Actions ──
   function nextUnfilled() {
     const next = picks.find((p) => !p.player_id);
     if (next) setCurrentPick(next.pick_no);
   }
 
   async function selectPlayer(player: Player) {
-    if (!currentPickRow || picksLocked) {
+    if (!isOwner || !currentPickRow || picksLocked) {
       if (picksLocked) setMsg(`Picks gesperrt seit ${picksLockedLabel}.`);
       return;
     }
@@ -234,1034 +169,505 @@ export default function MockDraftClient({
     const prev = picks;
     const next = picks.map((p) =>
       p.pick_no === currentPick
-        ? {
-            ...p,
-            player_id: player.id,
-            draft_players: {
-              full_name: player.full_name,
-              position: player.position,
-              school: player.school,
-              rank_overall: player.rank_overall,
-              college_logo_url: player.college_logo_url,
-            },
-          }
+        ? { ...p, player_id: player.id, draft_players: { full_name: player.full_name, position: player.position, school: player.school, rank_overall: player.rank_overall, college_logo_url: player.college_logo_url } }
         : p
     );
     setPicks(next);
-    const { error } = await supabase
-      .from("mock_picks")
-      .update({ player_id: player.id })
-      .eq("mock_id", mock.id)
-      .eq("pick_no", currentPick);
+    const { error } = await supabase.from("mock_picks").update({ player_id: player.id }).eq("mock_id", mock.id).eq("pick_no", currentPick);
     if (error) { setPicks(prev); setMsg(error.message); return; }
     const nextEmpty = next.find((p) => !p.player_id);
     if (nextEmpty) setCurrentPick(nextEmpty.pick_no);
-    // on mobile: switch to mypicks to show result, then back
-    if (window.innerWidth < 768) setMobileTab("mypicks");
+    if (window.innerWidth < 768) setMobileTab("picks");
   }
 
   async function clearPick(pickNo: number) {
-    if (picksLocked) { setMsg(`Picks gesperrt seit ${picksLockedLabel}.`); return; }
+    if (!isOwner || picksLocked) return;
     setMsg(null);
     const prev = picks;
-    const next = picks.map((p) =>
-      p.pick_no === pickNo ? { ...p, player_id: null, draft_players: null } : p
-    );
-    setPicks(next);
-    const { error } = await supabase
-      .from("mock_picks")
-      .update({ player_id: null })
-      .eq("mock_id", mock.id)
-      .eq("pick_no", pickNo);
+    setPicks(picks.map((p) => p.pick_no === pickNo ? { ...p, player_id: null, draft_players: null } : p));
+    const { error } = await supabase.from("mock_picks").update({ player_id: null }).eq("mock_id", mock.id).eq("pick_no", pickNo);
     if (error) { setPicks(prev); setMsg(error.message); }
   }
 
-  // ── Render helpers ──
   const team = currentPickRow?.teams;
-  const onClockLabel = currentPickRow?.draft_players
-    ? currentPickRow.draft_players.full_name
-    : "On the clock";
+  const pct = Math.round((filledCount / picks.length) * 100);
+
+  // ─── Pick Board (shared by left panel + mobile board tab) ────────────────
+  function PickBoard() {
+    return (
+      <>
+        {picks.map((p) => {
+          const isActive = p.pick_no === currentPick;
+          const score = resultsReady ? scorePick(p.pick_no, p.real_pick_no ?? null) : 0;
+          const ss = scoreStyle(score);
+          const filled = !!p.player_id;
+          let numBg = "rgba(255,255,255,0.05)";
+          let numColor = "#4a5068";
+          if (isActive) { numBg = "#fbbf24"; numColor = "#0c0d14"; }
+          else if (filled && resultsReady) { numBg = ss.bg; numColor = ss.text; }
+          else if (filled) { numBg = "rgba(52,211,153,0.15)"; numColor = "#34d399"; }
+
+          return (
+            <div key={p.pick_no} onClick={() => setCurrentPick(p.pick_no)}
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "9px 14px",
+                cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.04)",
+                background: isActive ? "rgba(251,191,36,0.06)" : "transparent",
+                borderLeft: isActive ? "3px solid #fbbf24" : "3px solid transparent",
+                transition: "background 0.1s",
+              }}
+              onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+              onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
+            >
+              <div style={{ width: 28, height: 28, borderRadius: 7, background: numBg, color: numColor,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11, fontWeight: 800, flexShrink: 0, fontFamily: "monospace" }}>
+                {p.pick_no}
+              </div>
+              <TeamLogo team={p.teams} size={22} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: filled ? "#e2e4f0" : "#4a5068",
+                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {p.draft_players?.full_name ?? (isActive && isOwner ? "On the clock…" : "—")}
+                </div>
+                {p.draft_players && (
+                  <div style={{ fontSize: 10, color: "#4a5068", marginTop: 1 }}>
+                    <span style={{ color: posColor(p.draft_players.position), fontWeight: 700 }}>{p.draft_players.position}</span>
+                    {" · "}{p.teams?.abbr}
+                  </div>
+                )}
+              </div>
+              {filled && resultsReady && score > 0 && (
+                <div style={{ fontSize: 10, fontWeight: 800, color: ss.text, flexShrink: 0 }}>+{score}</div>
+              )}
+              {filled && isOwner && !picksLocked && (
+                <button onClick={(e) => { e.stopPropagation(); clearPick(p.pick_no); }}
+                  style={{ background: "none", border: "none", color: "#4a5068", fontSize: 15,
+                    cursor: "pointer", padding: "0 2px", flexShrink: 0, lineHeight: 1 }}
+                  title="Entfernen">×</button>
+              )}
+            </div>
+          );
+        })}
+      </>
+    );
+  }
+
+  // ─── Draft Zone (center) ─────────────────────────────────────────────────
+  function DraftZone() {
+    if (!isOwner) {
+      return (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1,
+          color: "#4a5068", fontSize: 14, flexDirection: "column", gap: 8 }}>
+          <div style={{ fontSize: 32 }}>👁</div>
+          <div>Ansichtsmodus — Wähle einen Pick aus dem Board</div>
+        </div>
+      );
+    }
+    return (
+      <>
+        {/* On the clock */}
+        <div style={{ background: "rgba(255,255,255,0.03)", borderBottom: "1px solid rgba(255,255,255,0.06)",
+          padding: "16px 20px", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            {team?.logo_url && (
+              <img src={team.logo_url} alt={team.abbr} width={56} height={56}
+                style={{ objectFit: "contain", filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.4))" }} />
+            )}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: "#fbbf24", letterSpacing: 2,
+                textTransform: "uppercase", marginBottom: 4 }}>
+                {currentPickRow?.draft_players ? "Ausgewählt" : "On the Clock"}
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "#e2e4f0", lineHeight: 1.1 }}>
+                {currentPickRow?.draft_players?.full_name ?? team?.name ?? "—"}
+              </div>
+              {currentPickRow?.draft_players ? (
+                <div style={{ fontSize: 12, color: "#7a7f96", marginTop: 3 }}>
+                  <span style={{ color: posColor(currentPickRow.draft_players.position), fontWeight: 700 }}>
+                    {currentPickRow.draft_players.position}
+                  </span>
+                  {" · "}{currentPickRow.draft_players.school}
+                  {" · Pick "}<span style={{ fontFamily: "monospace", fontWeight: 700, color: "#fbbf24" }}>{currentPick}</span>
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: "#7a7f96", marginTop: 3 }}>
+                  {team?.name} · Pick <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#fbbf24" }}>{currentPick}</span>
+                </div>
+              )}
+              {currentNeeds.length > 0 && (
+                <div style={{ display: "flex", gap: 5, marginTop: 8, flexWrap: "wrap" }}>
+                  {currentNeeds.slice(0, 6).map((need) => (
+                    <span key={need} style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px",
+                      borderRadius: 4, background: `${posColor(need)}22`, color: posColor(need),
+                      border: `1px solid ${posColor(need)}44` }}>
+                      {need}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Search + filter */}
+        <div style={{ padding: "10px 16px 0", flexShrink: 0 }}>
+          <input value={q} onChange={(e) => setQ(e.target.value)}
+            placeholder="Spieler suchen…"
+            style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 10, padding: "9px 14px", fontSize: 13, color: "#e2e4f0",
+              outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+        </div>
+        <div style={{ display: "flex", gap: 6, padding: "8px 16px", overflowX: "auto",
+          flexShrink: 0, scrollbarWidth: "none" }}>
+          {positions.map((p) => (
+            <button key={p} onClick={() => setPos(p)}
+              style={{ border: "1px solid", borderRadius: 20, padding: "4px 11px",
+                fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
+                fontFamily: "inherit", transition: "all 0.12s",
+                background: pos === p ? posColor(p === "ALL" ? "XX" : p) : "transparent",
+                color: pos === p ? "#0c0d14" : (p === "ALL" ? "#7a7f96" : posColor(p)),
+                borderColor: pos === p ? posColor(p === "ALL" ? "XX" : p) : "rgba(255,255,255,0.1)",
+              }}>
+              {p === "ALL" ? "Alle" : p}
+            </button>
+          ))}
+        </div>
+
+        {/* Player list */}
+        <div ref={playerListRef} style={{ overflowY: "auto", flex: 1 }}>
+          {availablePlayers.length === 0 && (
+            <div style={{ padding: "32px 20px", color: "#4a5068", fontSize: 13, textAlign: "center" }}>
+              Keine Spieler gefunden.
+            </div>
+          )}
+          {availablePlayers.map((p) => {
+            const isNeed = currentNeeds.includes(p.position);
+            const pc = posColor(p.position);
+            return (
+              <div key={p.id}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px",
+                  borderBottom: "1px solid rgba(255,255,255,0.04)", cursor: "pointer",
+                  transition: "background 0.1s" }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.03)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                <SchoolAvatar name={p.school} logoUrl={p.college_logo_url} size={38} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#e2e4f0" }}>{p.full_name}</span>
+                    {isNeed && (
+                      <span style={{ fontSize: 9, fontWeight: 800, background: `${pc}22`, color: pc,
+                        border: `1px solid ${pc}44`, borderRadius: 4, padding: "1px 6px", letterSpacing: 0.5 }}>
+                        NEED
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#7a7f96", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontWeight: 700, color: pc,
+                      background: `${pc}15`, borderRadius: 4, padding: "1px 5px", fontSize: 10 }}>
+                      {p.position}
+                    </span>
+                    <span>{p.school}</span>
+                    {p.rank_pos && <span style={{ color: "#4a5068" }}>· {p.position}{p.rank_pos}</span>}
+                  </div>
+                </div>
+                <div style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700, color: "#4a5068", flexShrink: 0 }}>
+                  #{p.rank_overall}
+                </div>
+                <button onClick={() => selectPlayer(p)} disabled={picksLocked}
+                  style={{ background: picksLocked ? "rgba(255,255,255,0.04)" : "#4f6ef7",
+                    color: picksLocked ? "#4a5068" : "#fff", border: "none", borderRadius: 8,
+                    padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: picksLocked ? "not-allowed" : "pointer",
+                    flexShrink: 0, fontFamily: "inherit", transition: "opacity 0.12s" }}
+                  onMouseEnter={(e) => { if (!picksLocked) (e.currentTarget as HTMLButtonElement).style.opacity = "0.85"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                >
+                  Draft
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+
+  // ─── Score Panel (right) ─────────────────────────────────────────────────
+  function ScorePanel() {
+    return (
+      <>
+        <div style={{ padding: "16px 14px 12px", borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: "#4a5068", letterSpacing: 1.5,
+            textTransform: "uppercase", marginBottom: 12 }}>
+            {isOwner ? "Dein Draft" : ownerUsername ? `Draft von ${ownerUsername}` : "Draft"}
+          </div>
+          {/* Progress bar */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <span style={{ fontSize: 12, color: "#7a7f96" }}>Fortschritt</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#e2e4f0", fontFamily: "monospace" }}>
+                {filledCount}/{picks.length}
+              </span>
+            </div>
+            <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: "#4f6ef7",
+                borderRadius: 3, transition: "width 0.4s ease" }} />
+            </div>
+          </div>
+          {/* Score */}
+          {resultsReady ? (
+            <div style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)",
+              borderRadius: 10, padding: "12px 14px" }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: "#34d399", letterSpacing: 1, textTransform: "uppercase" }}>
+                Gesamtscore
+              </div>
+              <div style={{ fontSize: 36, fontWeight: 800, color: "#34d399", lineHeight: 1, marginTop: 4, fontFamily: "monospace" }}>
+                {totalScore}
+              </div>
+              <div style={{ fontSize: 11, color: "#7a7f96", marginTop: 4 }}>Punkte</div>
+            </div>
+          ) : (
+            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
+              borderRadius: 10, padding: "12px 14px" }}>
+              <div style={{ fontSize: 11, color: "#4a5068" }}>
+                {picksLocked
+                  ? "Draft gesperrt — Punkte erscheinen nach dem echten Draft."
+                  : "Punkte erscheinen nach dem echten Draft."}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Picks list */}
+        <div style={{ overflowY: "auto", flex: 1, padding: "8px 0" }}>
+          {picks.map((p) => {
+            const isActive = p.pick_no === currentPick;
+            const score = resultsReady ? scorePick(p.pick_no, p.real_pick_no ?? null) : 0;
+            const ss = scoreStyle(score);
+            const filled = !!p.player_id;
+            return (
+              <div key={p.pick_no} onClick={() => setCurrentPick(p.pick_no)}
+                style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 14px",
+                  cursor: "pointer", transition: "background 0.1s",
+                  background: isActive ? "rgba(251,191,36,0.06)" : "transparent",
+                  borderLeft: isActive ? "3px solid #fbbf24" : "3px solid transparent" }}
+                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
+              >
+                <div style={{ width: 22, height: 22, borderRadius: 5,
+                  background: filled && resultsReady ? ss.bg : filled ? "rgba(52,211,153,0.12)" : "rgba(255,255,255,0.04)",
+                  color: filled && resultsReady ? ss.text : filled ? "#34d399" : "#4a5068",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 9, fontWeight: 800, fontFamily: "monospace", flexShrink: 0 }}>
+                  {p.pick_no}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: filled ? "#e2e4f0" : "#4a5068",
+                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {p.draft_players?.full_name ?? "—"}
+                  </div>
+                  {p.draft_players && (
+                    <div style={{ fontSize: 10, color: "#4a5068", marginTop: 1 }}>
+                      <span style={{ color: posColor(p.draft_players.position) }}>{p.draft_players.position}</span>
+                      {resultsReady && p.real_pick_no && (
+                        <span style={{ marginLeft: 4, color: "#4a5068" }}>· real #{p.real_pick_no}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {filled && resultsReady && (
+                  <div style={{ fontSize: 11, fontWeight: 800, color: ss.text, flexShrink: 0 }}>
+                    {score > 0 ? `+${score}` : "—"}
+                  </div>
+                )}
+                {filled && isOwner && !picksLocked && (
+                  <button onClick={(e) => { e.stopPropagation(); clearPick(p.pick_no); }}
+                    style={{ background: "none", border: "none", color: "#4a5068", fontSize: 14,
+                      cursor: "pointer", padding: 0, flexShrink: 0 }}>×</button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
-      {/* ── CSS variables + base styles ─────────────────────────────────── */}
       <style>{`
         .md-root {
-          --md-bg:      #ffffff;
-          --md-surface: #ffffff;
-          --md-surface2:#f9fafb;
-          --md-border:  #e5e7eb;
-          --md-border2: #d1d5db;
-          --md-text1:   #111827;
-          --md-text2:   #374151;
-          --md-text3:   #6b7280;
-          --md-navy:    #111827;
-          --md-navy-lt: #eff6ff;
-          --md-navy-tx: #2563eb;
-          --md-score-bg:#f0fdf4;
-          --md-score-tx:#15803d;
-          --md-need-bg: #f0fdf4;
-          --md-need-tx: #15803d;
-
-          font-family: system-ui, sans-serif;
-          background: var(--md-bg);
-          color: var(--md-text1);
+          font-family: system-ui, -apple-system, sans-serif;
+          background: #0c0d14;
+          color: #e2e4f0;
           min-height: 100vh;
         }
-
-        /* ── Sticky top nav ── */
-        .md-topnav {
-          position: sticky;
-          top: 0;
-          z-index: 50;
-          background: #111827;
-          border-bottom: none;
-          padding: 12px 20px;
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          justify-content: space-between;
+        .md-topbar {
+          position: sticky; top: 0; z-index: 50;
+          background: #111320;
+          border-bottom: 1px solid rgba(255,255,255,0.07);
+          padding: 0 20px;
+          height: 52px;
+          display: flex; align-items: center;
+          justify-content: space-between; gap: 16px;
         }
-
-        .md-back {
-          font-size: 13px;
-          color: #9ca3af;
-          text-decoration: none;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          transition: color 0.15s;
-          font-weight: 600;
-        }
-        .md-back:hover { color: #ffffff; }
-
-        .md-title {
-          font-size: 16px;
-          font-weight: 800;
-          color: #ffffff;
-          line-height: 1.1;
-        }
-        .md-subtitle {
-          font-size: 11px;
-          color: #9ca3af;
-          margin-top: 1px;
-        }
-
-        .md-score-pill {
-          background: rgba(255,255,255,0.12);
-          color: #ffffff;
-          font-weight: 700;
-          font-size: 13px;
-          border-radius: 20px;
-          padding: 5px 12px;
-          white-space: nowrap;
-        }
-
-        .md-btn {
-          background: rgba(255,255,255,0.1);
-          border: 1px solid rgba(255,255,255,0.2);
-          border-radius: 8px;
-          padding: 6px 12px;
-          font-size: 12px;
-          font-weight: 600;
-          color: #ffffff;
-          cursor: pointer;
-          transition: background 0.15s;
-          white-space: nowrap;
-        }
-        .md-btn:hover { background: rgba(255,255,255,0.18); }
-        .md-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-        .md-error {
-          margin: 8px 16px;
-          background: #fef2f2;
-          border: 1px solid #fecaca;
-          border-radius: 8px;
-          padding: 10px 14px;
-          font-size: 13px;
-          color: #dc2626;
-        }
-
-        .md-locked-banner {
-          margin: 8px 16px;
-          background: #fffbeb;
-          border: 1px solid #fde68a;
-          border-radius: 8px;
-          padding: 8px 14px;
-          font-size: 12px;
-          color: #92400e;
-        }
-
-        /* ── Desktop 3-col layout ── */
         .md-desktop {
           display: none;
         }
         @media (min-width: 768px) {
-          .md-desktop { display: grid; grid-template-columns: 240px 1fr 260px; height: calc(100vh - 57px); }
+          .md-desktop {
+            display: grid;
+            grid-template-columns: 240px 1fr 260px;
+            height: calc(100vh - 52px);
+          }
+          .md-desktop.readonly {
+            grid-template-columns: 280px 1fr;
+          }
+          .md-mobile { display: none !important; }
         }
-
-        /* ── Left panel ── */
-        .md-left {
-          border-right: 1px solid var(--md-border);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
+        .md-panel {
+          display: flex; flex-direction: column; overflow: hidden;
+          border-right: 1px solid rgba(255,255,255,0.06);
         }
+        .md-panel:last-child { border-right: none; border-left: 1px solid rgba(255,255,255,0.06); }
         .md-panel-header {
           padding: 10px 14px;
-          background: var(--md-surface2);
-          border-bottom: 1px solid var(--md-border);
-          font-size: 11px;
-          font-weight: 700;
-          color: var(--md-text3);
-          letter-spacing: 1px;
-          text-transform: uppercase;
+          font-size: 10px; font-weight: 800; color: #4a5068;
+          letter-spacing: 1.5px; text-transform: uppercase;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
           flex-shrink: 0;
         }
-        .md-pick-list {
-          overflow-y: auto;
-          flex: 1;
-        }
-        .md-pick-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 9px 14px;
-          border-bottom: 1px solid var(--md-border);
-          cursor: pointer;
-          transition: background 0.12s;
-        }
-        .md-pick-row:hover { background: var(--md-surface2); }
-        .md-pick-row.active {
-          background: var(--md-navy-lt);
-          border-left: 3px solid var(--md-navy);
-        }
-        .md-pick-num {
-          width: 26px; height: 26px;
-          border-radius: 6px;
-          background: var(--md-surface2);
-          display: flex; align-items: center; justify-content: center;
-          font-size: 10px; font-weight: 700;
-          color: var(--md-text3);
-          flex-shrink: 0;
-          font-family: monospace;
-        }
-        .md-pick-num.active { background: var(--md-navy); color: #fff; }
-        .md-pick-num.filled { background: var(--md-score-bg); color: var(--md-score-tx); }
-
-        /* ── Center panel ── */
-        .md-center {
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-        }
-        .md-clock-header {
-          background: var(--md-navy);
-          padding: 14px 18px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          flex-shrink: 0;
-        }
-        .md-clock-label {
-          font-size: 10px;
-          font-weight: 700;
-          color: rgba(255,255,255,0.55);
-          letter-spacing: 1.5px;
-          text-transform: uppercase;
-          margin-bottom: 3px;
-        }
-        .md-clock-team {
-          font-size: 17px;
-          font-weight: 700;
-          color: #fff;
-        }
-        .md-clock-meta {
-          font-size: 11px;
-          color: rgba(255,255,255,0.6);
-          margin-top: 2px;
-        }
-        .md-clock-pick {
-          font-family: monospace;
-          font-size: 13px;
-          color: rgba(255,255,255,0.7);
-          text-align: right;
-        }
-
-        .md-filter-row {
-          padding: 10px 14px;
-          border-bottom: 1px solid var(--md-border);
-          display: flex;
-          gap: 6px;
-          flex-shrink: 0;
-          flex-wrap: wrap;
-        }
-        .md-search {
-          flex: 1;
-          min-width: 120px;
-          background: var(--md-surface2);
-          border: 1px solid var(--md-border);
-          border-radius: 8px;
-          padding: 7px 10px;
-          font-size: 13px;
-          color: var(--md-text1);
-          outline: none;
-          font-family: inherit;
-        }
-        .md-search::placeholder { color: var(--md-text3); }
-        .md-search:focus { border-color: var(--md-navy); }
-
-        .md-pos-select {
-          background: var(--md-surface2);
-          border: 1px solid var(--md-border);
-          border-radius: 8px;
-          padding: 7px 10px;
-          font-size: 12px;
-          color: var(--md-text2);
-          outline: none;
-          font-family: inherit;
-          cursor: pointer;
-        }
-
-        .md-player-list {
-          overflow-y: auto;
-          flex: 1;
-        }
-        .md-player-row {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 10px 14px;
-          border-bottom: 1px solid var(--md-border);
-          transition: background 0.12s;
-        }
-        .md-player-row:hover { background: var(--md-surface2); }
-
-        .md-player-info { flex: 1; min-width: 0; }
-        .md-player-name {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--md-text1);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .md-player-meta {
-          font-size: 11px;
-          color: var(--md-text3);
-          margin-top: 2px;
-        }
-        .md-need-badge {
-          background: var(--md-need-bg);
-          color: var(--md-need-tx);
-          font-size: 9px;
-          font-weight: 700;
-          letter-spacing: 0.5px;
-          border-radius: 4px;
-          padding: 2px 5px;
-          flex-shrink: 0;
-        }
-        .md-rank {
-          font-family: monospace;
-          font-size: 12px;
-          font-weight: 500;
-          color: var(--md-text3);
-          width: 28px;
-          text-align: right;
-          flex-shrink: 0;
-        }
-        .md-draft-btn {
-          background: var(--md-navy);
-          color: #fff;
-          border: none;
-          border-radius: 7px;
-          padding: 6px 12px;
-          font-size: 12px;
-          font-weight: 700;
-          cursor: pointer;
-          flex-shrink: 0;
-          transition: opacity 0.15s;
-          font-family: inherit;
-        }
-        .md-draft-btn:hover { opacity: 0.88; }
-        .md-draft-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-        /* ── Right panel ── */
-        .md-right {
-          border-left: 1px solid var(--md-border);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-        }
-        .md-mypicks-list {
-          overflow-y: auto;
-          flex: 1;
-          padding: 10px;
-          display: flex;
-          flex-direction: column;
-          gap: 5px;
-        }
-        .md-mypick-card {
-          border-radius: 9px;
-          padding: 9px 11px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          border: 1px solid var(--md-border);
-          background: var(--md-surface);
-          cursor: pointer;
-          transition: background 0.12s;
-        }
-        .md-mypick-card:hover { background: var(--md-surface2); }
-        .md-mypick-card.active { border-color: var(--md-navy); background: var(--md-navy-lt); }
-        .md-mypick-num {
-          width: 22px; height: 22px;
-          border-radius: 5px;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 9px; font-weight: 700;
-          font-family: monospace;
-          flex-shrink: 0;
-        }
-        .md-score-badge {
-          margin-left: auto;
-          font-size: 12px;
-          font-weight: 700;
-          flex-shrink: 0;
-        }
-
-        /* ── Score total card ── */
-        .md-score-card {
-          margin: 10px;
-          background: var(--md-surface2);
-          border-radius: 10px;
-          padding: 12px 14px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-shrink: 0;
-        }
-        .md-score-total {
-          font-size: 26px;
-          font-weight: 700;
-          color: var(--md-score-tx);
-        }
-        .md-progress-bar {
-          height: 4px;
-          background: var(--md-border);
-          border-radius: 2px;
-          margin-top: 6px;
-          overflow: hidden;
-        }
-        .md-progress-fill {
-          height: 100%;
-          background: var(--md-navy);
-          border-radius: 2px;
-          transition: width 0.4s ease;
-        }
-
-        /* ── Mobile layout ── */
         .md-mobile {
-          display: flex;
-          flex-direction: column;
-          height: calc(100vh - 57px);
+          display: flex; flex-direction: column;
+          height: calc(100vh - 52px);
         }
-        @media (min-width: 768px) {
-          .md-mobile { display: none; }
-        }
-
-        /* Tab bar */
         .md-tabs {
-          display: flex;
-          background: var(--md-surface2);
-          padding: 4px;
-          gap: 3px;
+          display: flex; background: #111320;
+          border-bottom: 1px solid rgba(255,255,255,0.07);
           flex-shrink: 0;
-          border-bottom: 1px solid var(--md-border);
         }
         .md-tab {
-          flex: 1;
-          padding: 8px 6px;
-          border: none;
-          border-radius: 7px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.15s;
-          background: transparent;
-          color: var(--md-text3);
-          font-family: inherit;
+          flex: 1; padding: 12px 6px; border: none;
+          font-size: 12px; font-weight: 700; cursor: pointer;
+          transition: all 0.15s; background: transparent;
+          color: #4a5068; font-family: inherit;
+          border-bottom: 2px solid transparent;
         }
-        .md-tab.active {
-          background: var(--md-surface);
-          color: var(--md-text1);
-          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        .md-tab.active { color: #e2e4f0; border-bottom-color: #4f6ef7; }
+        .md-msg {
+          margin: 8px 16px; background: rgba(239,68,68,0.1);
+          border: 1px solid rgba(239,68,68,0.25); border-radius: 8px;
+          padding: 9px 13px; font-size: 12px; color: #ef4444;
         }
-
-        /* Mobile clock strip */
-        .md-mobile-clock {
-          background: var(--md-navy);
-          padding: 10px 14px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-shrink: 0;
+        .md-locked {
+          margin: 8px 16px; background: rgba(251,191,36,0.08);
+          border: 1px solid rgba(251,191,36,0.2); border-radius: 8px;
+          padding: 8px 13px; font-size: 12px; color: #fbbf24;
         }
-
-        /* Mobile filter pills */
-        .md-pill-row {
-          display: flex;
-          gap: 5px;
-          padding: 8px 12px;
-          overflow-x: auto;
-          flex-shrink: 0;
-          border-bottom: 1px solid var(--md-border);
-          scrollbar-width: none;
-        }
-        .md-pill-row::-webkit-scrollbar { display: none; }
-        .md-pill {
-          border: 1px solid var(--md-border2);
-          border-radius: 20px;
-          padding: 5px 11px;
-          font-size: 12px;
-          font-weight: 600;
-          white-space: nowrap;
-          cursor: pointer;
-          background: var(--md-surface);
-          color: var(--md-text2);
-          transition: all 0.12s;
-          font-family: inherit;
-        }
-        .md-pill.active {
-          background: var(--md-navy);
-          color: #fff;
-          border-color: var(--md-navy);
-        }
-
-        /* Mobile search */
-        .md-mobile-search {
-          margin: 8px 12px;
-          background: var(--md-surface2);
-          border: 1px solid var(--md-border);
-          border-radius: 9px;
-          padding: 8px 12px;
-          font-size: 14px;
-          color: var(--md-text1);
-          outline: none;
-          width: calc(100% - 24px);
-          font-family: inherit;
-          flex-shrink: 0;
-        }
-        .md-mobile-search::placeholder { color: var(--md-text3); }
-        .md-mobile-search:focus { border-color: var(--md-navy); }
-
-        /* Mobile player rows */
-        .md-mobile-player {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 10px 14px;
-          border-bottom: 1px solid var(--md-border);
-        }
-        .md-mobile-draft-btn {
-          background: var(--md-navy);
-          color: #fff;
-          border: none;
-          border-radius: 8px;
-          padding: 8px 14px;
-          font-size: 13px;
-          font-weight: 700;
-          cursor: pointer;
-          flex-shrink: 0;
-          font-family: inherit;
-          transition: opacity 0.15s;
-        }
-        .md-mobile-draft-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-        /* Mobile my picks */
-        .md-mobile-picks {
-          overflow-y: auto;
-          flex: 1;
-          padding: 10px 12px;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-        .md-mobile-pick-card {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 11px 13px;
-          border-radius: 11px;
-          border: 1px solid var(--md-border);
-          background: var(--md-surface);
-          cursor: pointer;
-          transition: background 0.12s;
-        }
-        .md-mobile-pick-card.active {
-          border-color: var(--md-navy);
-          background: var(--md-navy-lt);
-        }
-        .md-mobile-clear {
-          background: none;
-          border: none;
-          color: var(--md-text3);
-          font-size: 16px;
-          cursor: pointer;
-          padding: 0 4px;
-          flex-shrink: 0;
-        }
-
-        /* Scrollbar styling */
-        .md-pick-list::-webkit-scrollbar,
-        .md-player-list::-webkit-scrollbar,
-        .md-mypicks-list::-webkit-scrollbar { width: 4px; }
-        .md-pick-list::-webkit-scrollbar-track,
-        .md-player-list::-webkit-scrollbar-track,
-        .md-mypicks-list::-webkit-scrollbar-track { background: transparent; }
-        .md-pick-list::-webkit-scrollbar-thumb,
-        .md-player-list::-webkit-scrollbar-thumb,
-        .md-mypicks-list::-webkit-scrollbar-thumb {
-          background: var(--md-border2);
-          border-radius: 2px;
-        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
       `}</style>
 
       <div className="md-root">
 
-        {/* ── Top Nav ── */}
-        <div className="md-topnav">
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Link href="/app" className="md-back">← zurück</Link>
-            <div style={{ width: 1, height: 20, background: "var(--md-border)" }} />
+        {/* Top bar */}
+        <div className="md-topbar">
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <Link href="/mock-draft" style={{ fontSize: 13, color: "#4a5068", textDecoration: "none",
+              fontWeight: 600, transition: "color 0.15s" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#e2e4f0")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#4a5068")}>
+              ← Mock Draft
+            </Link>
+            <div style={{ width: 1, height: 18, background: "rgba(255,255,255,0.08)" }} />
             <div>
-              <div className="md-title">{mock.title}</div>
-              <div className="md-subtitle">Season {mock.season} · Round 1</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#e2e4f0" }}>{mock.title}</div>
+              <div style={{ fontSize: 11, color: "#4a5068" }}>
+                Season {mock.season} · Round 1
+                {!isOwner && ownerUsername ? ` · von ${ownerUsername}` : ""}
+              </div>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div className="md-score-pill">Score: {totalScore}</div>
-            <button className="md-btn" onClick={nextUnfilled} disabled={picksLocked}>
-              Next ↓
-            </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ fontFamily: "monospace", fontSize: 12, color: "#4a5068" }}>
+              {filledCount}<span style={{ color: "#252940" }}>/</span>{picks.length}
+            </div>
+            {resultsReady && totalScore !== null && (
+              <div style={{ background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.25)",
+                color: "#34d399", fontWeight: 800, fontSize: 13, borderRadius: 20, padding: "4px 12px",
+                fontFamily: "monospace" }}>
+                {totalScore} Pts
+              </div>
+            )}
+            {isOwner && !picksLocked && (
+              <button onClick={nextUnfilled}
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 600,
+                  color: "#e2e4f0", cursor: "pointer", fontFamily: "inherit" }}>
+                Weiter ↓
+              </button>
+            )}
           </div>
         </div>
 
-        {msg && <div className="md-error">⚠ {msg}</div>}
-        {picksLocked && (
-          <div className="md-locked-banner">
-            🔒 Picks gesperrt seit {picksLockedLabel}
-          </div>
+        {msg && <div className="md-msg">⚠ {msg}</div>}
+        {picksLocked && isOwner && (
+          <div className="md-locked">🔒 Picks gesperrt seit {picksLockedLabel}</div>
         )}
 
-        {/* ════════════════════════════════════════════════
-            DESKTOP (≥768px)
-        ════════════════════════════════════════════════ */}
-        <div className="md-desktop">
+        {/* ── DESKTOP ─────────────────────────────── */}
+        <div className={`md-desktop${!isOwner ? " readonly" : ""}`}>
 
-          {/* Left: full pick board */}
-          <div className="md-left">
-            <div className="md-panel-header">Round 1 · {filledCount}/{totalCount}</div>
-            <div className="md-pick-list">
-              {picks.map((p) => {
-                const isActive = p.pick_no === currentPick;
-                const pl       = p.player_id ? playerById.get(p.player_id) : null;
-                const score    = pl ? scorePick(p.pick_no, pl.real_pick_no ?? null) : 0;
-                const sm       = scoreMeta(score);
-                const filled   = !!p.player_id;
-
-                return (
-                  <div
-                    key={p.pick_no}
-                    className={`md-pick-row ${isActive ? "active" : ""}`}
-                    onClick={() => setCurrentPick(p.pick_no)}
-                  >
-                    <div className={`md-pick-num ${isActive ? "active" : filled ? "filled" : ""}`}>
-                      {p.pick_no}
-                    </div>
-                    <TeamLogo team={p.teams} size={24} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{
-                        fontSize: 12, fontWeight: 600,
-                        color: isActive ? "var(--md-navy-tx)" : "var(--md-text1)",
-                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                      }}>
-                        {p.draft_players?.full_name ?? (isActive ? "On the clock" : "Upcoming")}
-                      </div>
-                      {p.draft_players && (
-                        <div style={{ fontSize: 10, color: "var(--md-text3)" }}>
-                          {p.draft_players.position} · {p.draft_players.school}
-                        </div>
-                      )}
-                    </div>
-                    {filled && score > 0 && (
-                      <div style={{
-                        fontSize: 10, fontWeight: 700,
-                        background: sm.bg, color: sm.text,
-                        borderRadius: 4, padding: "2px 5px",
-                        flexShrink: 0,
-                      }}>
-                        +{score}
-                      </div>
-                    )}
-                    {filled && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); clearPick(p.pick_no); }}
-                        disabled={picksLocked}
-                        style={{
-                          background: "none", border: "none",
-                          color: "var(--md-text3)", fontSize: 14,
-                          cursor: "pointer", padding: "0 2px",
-                          flexShrink: 0, lineHeight: 1,
-                        }}
-                        title="Clear"
-                      >×</button>
-                    )}
-                  </div>
-                );
-              })}
+          {/* Left: pick board */}
+          <div className="md-panel">
+            <div className="md-panel-header">Round 1 · {filledCount}/{picks.length}</div>
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              <PickBoard />
             </div>
           </div>
 
-          {/* Center: clock + player picker */}
-          <div className="md-center">
-            {/* On the clock */}
-            <div className="md-clock-header">
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                {team?.logo_url && (
-                  <img src={team.logo_url} alt={team.abbr} width={40} height={40}
-                    style={{ objectFit: "contain", filter: "brightness(0) invert(1)", opacity: 0.9 }} />
-                )}
-                <div>
-                  <div className="md-clock-label">On the clock</div>
-                  <div className="md-clock-team">{team?.name ?? "—"}</div>
-                  {currentNeeds.length > 0 && (
-                    <div className="md-clock-meta">Needs: {currentNeeds.join(", ")}</div>
-                  )}
-                </div>
-              </div>
-              <div className="md-clock-pick">
-                R1 · Pick {currentPick}
-                {currentPickRow?.draft_players && (
-                  <div style={{ fontSize: 12, marginTop: 2 }}>
-                    {currentPickRow.draft_players.full_name}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Search + filter */}
-            <div className="md-filter-row">
-              <input
-                className="md-search"
-                placeholder="🔍 Spieler suchen…"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
-              <select
-                className="md-pos-select"
-                value={pos}
-                onChange={(e) => setPos(e.target.value)}
-              >
-                {positions.map((p) => (
-                  <option key={p} value={p}>{p === "ALL" ? "Alle Pos." : p}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Player rows */}
-            <div className="md-player-list" ref={playerListRef}>
-              {availablePlayers.length === 0 && (
-                <div style={{ padding: "24px 16px", color: "var(--md-text3)", fontSize: 13 }}>
-                  Keine Spieler gefunden.
-                </div>
-              )}
-              {availablePlayers.map((p) => {
-                const isNeed = currentNeeds.includes(p.position);
-                return (
-                  <div key={p.id} className="md-player-row">
-                    <Avatar name={p.school} logoUrl={p.college_logo_url} size={36} />
-                    <div className="md-player-info">
-                      <div className="md-player-name">
-                        {p.full_name}
-                        {isNeed && <span className="md-need-badge">NEED</span>}
-                      </div>
-                      <div className="md-player-meta">
-                        {p.position} · {p.school}
-                        {p.rank_pos ? ` · ${p.position}${p.rank_pos}` : ""}
-                      </div>
-                    </div>
-                    <div className="md-rank">#{p.rank_overall}</div>
-                    <button
-                      className="md-draft-btn"
-                      disabled={picksLocked}
-                      onClick={() => selectPlayer(p)}
-                    >
-                      Draft
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+          {/* Center: draft zone */}
+          <div className="md-panel" style={{ border: "none" }}>
+            <DraftZone />
           </div>
 
-          {/* Right: my picks + score */}
-          <div className="md-right">
-            <div className="md-panel-header">Meine Picks</div>
-
-            {/* Score summary */}
-            <div className="md-score-card">
-              <div>
-                <div style={{ fontSize: 11, color: "var(--md-text3)", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Gesamtscore</div>
-                <div className="md-score-total">{totalScore}</div>
-                <div style={{ fontSize: 11, color: "var(--md-text3)", marginTop: 2 }}>
-                  {filledCount} / {totalCount} Picks
-                </div>
-                <div className="md-progress-bar">
-                  <div className="md-progress-fill" style={{ width: `${(filledCount / totalCount) * 100}%` }} />
-                </div>
-              </div>
+          {/* Right: score panel (owner + read-only) */}
+          {isOwner && (
+            <div className="md-panel">
+              <div className="md-panel-header">{resultsReady ? "Score" : "Dein Draft"}</div>
+              <ScorePanel />
             </div>
-
-            <div className="md-mypicks-list">
-              {picks.map((p) => {
-                const isActive = p.pick_no === currentPick;
-                const pl       = p.player_id ? playerById.get(p.player_id) : null;
-                const score    = pl ? scorePick(p.pick_no, pl.real_pick_no ?? null) : 0;
-                const sm       = scoreMeta(score);
-
-                return (
-                  <div
-                    key={p.pick_no}
-                    className={`md-mypick-card ${isActive ? "active" : ""}`}
-                    onClick={() => setCurrentPick(p.pick_no)}
-                  >
-                    <div
-                      className="md-mypick-num"
-                      style={p.player_id
-                        ? { background: sm.bg, color: sm.text }
-                        : { background: "var(--md-surface2)", color: "var(--md-text3)" }}
-                    >
-                      {p.pick_no}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{
-                        fontSize: 12, fontWeight: 600,
-                        color: "var(--md-text1)",
-                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                      }}>
-                        {p.draft_players?.full_name ?? (isActive ? "On the clock" : "—")}
-                      </div>
-                      {p.draft_players && (
-                        <div style={{ fontSize: 10, color: "var(--md-text3)" }}>
-                          {p.draft_players.position} · {p.teams?.abbr}
-                        </div>
-                      )}
-                    </div>
-                    {p.player_id && score > 0 && (
-                      <div className="md-score-badge" style={{ color: sm.text }}>+{score}</div>
-                    )}
-                    {p.player_id && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); clearPick(p.pick_no); }}
-                        disabled={picksLocked}
-                        style={{
-                          background: "none", border: "none",
-                          color: "var(--md-text3)", fontSize: 14,
-                          cursor: "pointer", padding: 0, flexShrink: 0,
-                        }}
-                      >×</button>
-                    )}
-                  </div>
-                );
-              })}
+          )}
+          {!isOwner && (
+            <div className="md-panel">
+              <div className="md-panel-header">Picks</div>
+              <ScorePanel />
             </div>
-          </div>
+          )}
         </div>
 
-        {/* ════════════════════════════════════════════════
-            MOBILE (<768px)
-        ════════════════════════════════════════════════ */}
+        {/* ── MOBILE ──────────────────────────────── */}
         <div className="md-mobile">
-
-          {/* Tab bar */}
           <div className="md-tabs">
-            <button
-              className={`md-tab ${mobileTab === "board" ? "active" : ""}`}
-              onClick={() => setMobileTab("board")}
-            >
-              Draft Board
-            </button>
-            <button
-              className={`md-tab ${mobileTab === "mypicks" ? "active" : ""}`}
-              onClick={() => setMobileTab("mypicks")}
-            >
-              My Picks · {filledCount}/{totalCount}
-            </button>
+            {(["board","draft","picks"] as const).map((tab) => {
+              const labels = { board: `Board (${filledCount})`, draft: "Draften", picks: resultsReady ? `Score: ${totalScore ?? "—"}` : "Picks" };
+              return (
+                <button key={tab} className={`md-tab${mobileTab === tab ? " active" : ""}`}
+                  onClick={() => setMobileTab(tab)}>
+                  {labels[tab]}
+                </button>
+              );
+            })}
           </div>
-
-          {/* ── Board Tab ── */}
-          {mobileTab === "board" && (
-            <>
-              {/* Clock strip */}
-              <div className="md-mobile-clock">
-                <div>
-                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", letterSpacing: 1.5, textTransform: "uppercase" }}>
-                    On the clock · Pick {currentPick}
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#fff", marginTop: 2 }}>
-                    {team?.name ?? "—"}
-                  </div>
-                </div>
-                {currentNeeds.length > 0 && (
-                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", textAlign: "right" }}>
-                    {currentNeeds.slice(0, 3).join(" · ")}
-                  </div>
-                )}
-              </div>
-
-              {/* Position pills */}
-              <div className="md-pill-row">
-                {positions.map((p) => (
-                  <button
-                    key={p}
-                    className={`md-pill ${pos === p ? "active" : ""}`}
-                    onClick={() => setPos(p)}
-                  >
-                    {p === "ALL" ? "Alle" : p}
-                  </button>
-                ))}
-              </div>
-
-              {/* Search */}
-              <input
-                className="md-mobile-search"
-                placeholder="Spieler suchen…"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
-
-              {/* Players */}
-              <div style={{ overflowY: "auto", flex: 1 }}>
-                {availablePlayers.length === 0 && (
-                  <div style={{ padding: "24px 16px", color: "var(--md-text3)", fontSize: 13 }}>
-                    Keine Spieler gefunden.
-                  </div>
-                )}
-                {availablePlayers.map((p) => {
-                  const isNeed = currentNeeds.includes(p.position);
-                  return (
-                    <div key={p.id} className="md-mobile-player">
-                      <Avatar name={p.school} logoUrl={p.college_logo_url} size={40} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--md-text1)", display: "flex", alignItems: "center", gap: 6 }}>
-                          {p.full_name}
-                          {isNeed && <span className="md-need-badge">NEED</span>}
-                        </div>
-                        <div style={{ fontSize: 11, color: "var(--md-text3)", marginTop: 1 }}>
-                          #{p.rank_overall} · {p.position} · {p.school}
-                        </div>
-                      </div>
-                      <button
-                        className="md-mobile-draft-btn"
-                        disabled={picksLocked}
-                        onClick={() => selectPlayer(p)}
-                      >
-                        Draft
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {/* ── My Picks Tab ── */}
-          {mobileTab === "mypicks" && (
-            <>
-              {/* Score banner */}
-              <div style={{
-                margin: "10px 12px",
-                background: "var(--md-surface)",
-                border: "1px solid var(--md-border)",
-                borderRadius: 12,
-                padding: "12px 14px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                flexShrink: 0,
-              }}>
-                <div>
-                  <div style={{ fontSize: 11, color: "var(--md-text3)", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Gesamtscore</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: "var(--md-score-tx)", lineHeight: 1.1 }}>{totalScore}</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 11, color: "var(--md-text3)" }}>{filledCount} / {totalCount} Picks</div>
-                  <div className="md-progress-bar" style={{ width: 80, marginTop: 6 }}>
-                    <div className="md-progress-fill" style={{ width: `${(filledCount / totalCount) * 100}%` }} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="md-mobile-picks">
-                {picks.map((p) => {
-                  const isActive = p.pick_no === currentPick;
-                  const pl       = p.player_id ? playerById.get(p.player_id) : null;
-                  const score    = pl ? scorePick(p.pick_no, pl.real_pick_no ?? null) : 0;
-                  const sm       = scoreMeta(score);
-
-                  return (
-                    <div
-                      key={p.pick_no}
-                      className={`md-mobile-pick-card ${isActive ? "active" : ""}`}
-                      onClick={() => { setCurrentPick(p.pick_no); setMobileTab("board"); }}
-                    >
-                      <div style={{
-                        width: 28, height: 28, borderRadius: 7,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 10, fontWeight: 700, flexShrink: 0,
-                        fontFamily: "monospace",
-                        background: p.player_id ? sm.bg : "var(--md-surface2)",
-                        color: p.player_id ? sm.text : "var(--md-text3)",
-                      }}>
-                        {p.pick_no}
-                      </div>
-                      <TeamLogo team={p.teams} size={26} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          fontSize: 13, fontWeight: 600, color: "var(--md-text1)",
-                          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                        }}>
-                          {p.draft_players?.full_name ?? (isActive ? "← Jetzt draften" : "Offen")}
-                        </div>
-                        {p.draft_players && (
-                          <div style={{ fontSize: 11, color: "var(--md-text3)" }}>
-                            {p.draft_players.position} · {p.draft_players.school}
-                          </div>
-                        )}
-                      </div>
-                      {p.player_id && score > 0 && (
-                        <div style={{ fontSize: 13, fontWeight: 700, color: sm.text, flexShrink: 0 }}>
-                          +{score}
-                        </div>
-                      )}
-                      {p.player_id && (
-                        <button
-                          className="md-mobile-clear"
-                          onClick={(e) => { e.stopPropagation(); clearPick(p.pick_no); }}
-                          disabled={picksLocked}
-                        >×</button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
+          <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+            {mobileTab === "board" && <PickBoard />}
+            {mobileTab === "draft" && <DraftZone />}
+            {mobileTab === "picks" && <ScorePanel />}
+          </div>
         </div>
+
       </div>
     </>
   );

@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { createServerReadClient } from "@/lib/supabase/server";
 import MockDraftClient from "./ui/MockDraftClient";
+import styles from "./view.module.css";
 
-const FALLBACK_LOCK_ISO = "2099-01-01T00:00:00.000Z"; // safe fallback if config missing
+const FALLBACK_LOCK_ISO = "2099-01-01T00:00:00.000Z";
 
 export default async function MockDraftEditorPage({
   params,
@@ -17,18 +18,20 @@ export default async function MockDraftEditorPage({
   const user = userRes?.user;
   if (!user) redirect("/login");
 
+  // Fetch mock without user restriction (to support viewing others' drafts)
   const { data: mock, error: mockErr } = await supabase
     .from("mock_drafts")
-    .select("id, season, title")
+    .select("id, season, title, user_id")
     .eq("id", mockId)
-    .eq("user_id", user.id)
     .single();
 
   if (mockErr || !mock) {
-    return <div className="p-6">Mock nicht gefunden oder kein Zugriff.</div>;
+    return <div className={styles.notFound}>Mock nicht gefunden.</div>;
   }
 
-  // Load lock time from draft_config for this season
+  const isOwner = mock.user_id === user.id;
+
+  // Load lock time from draft_config
   const { data: config } = await supabase
     .from("draft_config")
     .select("picks_lock_at")
@@ -37,17 +40,30 @@ export default async function MockDraftEditorPage({
 
   const picksLockAtIso = config?.picks_lock_at ?? FALLBACK_LOCK_ISO;
 
+  // Results are "ready" when real picks exist for this season
   const { data: realPicks } = await supabase
     .from("real_draft_picks")
     .select("player_id, pick_no")
     .eq("season", mock.season);
 
-  const realPickMap = new Map<string, number>();
-  (realPicks ?? []).forEach((r: { player_id: string; pick_no: number }) => {
-    realPickMap.set(r.player_id, r.pick_no);
-  });
+  const resultsReady = (realPicks ?? []).length > 0;
 
-  
+  // Non-owners can only view once results are published
+  if (!isOwner && !resultsReady) {
+    return (
+      <div className={styles.notFound}>
+        Dieser Mock Draft ist erst nach dem echten Draft einsehbar.
+      </div>
+    );
+  }
+
+  const realPickMap = new Map<string, number>();
+  if (resultsReady) {
+    (realPicks ?? []).forEach((r: { player_id: string; pick_no: number }) => {
+      realPickMap.set(r.player_id, r.pick_no);
+    });
+  }
+
   const { data: picks, error: picksErr } = await supabase
     .from("mock_picks")
     .select(
@@ -63,10 +79,9 @@ export default async function MockDraftEditorPage({
     .order("pick_no", { ascending: true });
 
   if (picksErr) {
-    return <div className="p-6">Error loading picks: {picksErr.message}</div>;
+    return <div className={styles.notFound}>Fehler: {picksErr.message}</div>;
   }
 
-  // ✅ Normalize + flatten picks
   const normalizedPicks =
     (picks ?? []).map((p: {
       pick_no: number;
@@ -94,53 +109,39 @@ export default async function MockDraftEditorPage({
         | null;
     }) => {
       const teams = Array.isArray(p.teams) ? p.teams[0] ?? null : p.teams ?? null;
-
-      const draftPlayer = Array.isArray(p.draft_players)
-        ? p.draft_players[0] ?? null
-        : p.draft_players ?? null;
-
+      const draftPlayer = Array.isArray(p.draft_players) ? p.draft_players[0] ?? null : p.draft_players ?? null;
       const collegeObj =
-        draftPlayer?.colleges == null
-          ? null
-          : Array.isArray(draftPlayer.colleges)
-            ? draftPlayer.colleges[0] ?? null
-            : draftPlayer.colleges;
+        draftPlayer?.colleges == null ? null
+        : Array.isArray(draftPlayer.colleges) ? draftPlayer.colleges[0] ?? null
+        : draftPlayer.colleges;
 
       return {
         ...p,
         teams,
         draft_players: draftPlayer
-          ? {
-              ...draftPlayer,
-              // ✅ wichtig: so kann der Client das Logo direkt nutzen
-              college_logo_url: collegeObj?.logo_url ?? null,
-            }
+          ? { ...draftPlayer, college_logo_url: collegeObj?.logo_url ?? null }
           : null,
       };
     }) ?? [];
 
-  const { data: needs, error: needsErr } = await supabase
-    .from("team_needs")
-    .select("team_id, needs")
-    .eq("season", mock.season);
+  // Only load player picker + team needs for owners (not needed in read-only view)
+  const needsData = isOwner
+    ? await supabase.from("team_needs").select("team_id, needs").eq("season", mock.season)
+    : { data: [], error: null };
 
-  if (needsErr) {
-    return <div className="p-6">Error loading needs: {needsErr.message}</div>;
-  }
+  const playersData = isOwner
+    ? await supabase
+        .from("draft_players")
+        .select("id, full_name, position, school, rank_overall, rank_pos, colleges(logo_url)")
+        .order("rank_overall", { ascending: true })
+        .limit(300)
+    : { data: [], error: null };
 
-  const { data: players, error: playersErr } = await supabase
-    .from("draft_players")
-    .select("id, full_name, position, school, rank_overall, rank_pos, colleges(logo_url)")
-    .order("rank_overall", { ascending: true })
-    .limit(300);
+  if (needsData.error) return <div className={styles.notFound}>Fehler: {needsData.error.message}</div>;
+  if (playersData.error) return <div className={styles.notFound}>Fehler: {playersData.error.message}</div>;
 
-  if (playersErr) {
-    return <div className="p-6">Error loading players: {playersErr.message}</div>;
-  }
-
-  // ✅ Normalize + flatten players
   const normalizedPlayers =
-    (players ?? []).map((p: {
+    (playersData.data ?? []).map((p: {
       id: string;
       full_name: string;
       position: string;
@@ -150,7 +151,6 @@ export default async function MockDraftEditorPage({
       colleges: { logo_url: string | null } | Array<{ logo_url: string | null }> | null;
     }) => {
       const collegeObj = Array.isArray(p.colleges) ? p.colleges[0] ?? null : p.colleges ?? null;
-  
       return {
         id: p.id,
         full_name: p.full_name,
@@ -159,18 +159,34 @@ export default async function MockDraftEditorPage({
         rank_overall: p.rank_overall,
         rank_pos: p.rank_pos ?? null,
         college_logo_url: collegeObj?.logo_url ?? null,
-  
-        real_pick_no: realPickMap.get(p.id) ?? null, // 👈 hier
+        // Only pass real pick number when results are published
+        real_pick_no: resultsReady ? (realPickMap.get(p.id) ?? null) : null,
       };
     }) ?? [];
 
+  // For read-only view: annotate picks with real pick number directly
+  const picksWithResults = resultsReady
+    ? normalizedPicks.map((p) => ({
+        ...p,
+        real_pick_no: p.player_id ? (realPickMap.get(p.player_id) ?? null) : null,
+      }))
+    : normalizedPicks.map((p) => ({ ...p, real_pick_no: null }));
+
+  // Fetch owner username for display in read-only view
+  const { data: ownerProfile } = !isOwner
+    ? await supabase.from("profiles").select("username").eq("user_id", mock.user_id).maybeSingle()
+    : { data: null };
+
   return (
     <MockDraftClient
-      mock={mock}
-      initialPicks={normalizedPicks}
-      teamNeeds={needs ?? []}
+      mock={{ id: mock.id, season: mock.season, title: mock.title }}
+      initialPicks={picksWithResults}
+      teamNeeds={needsData.data ?? []}
       initialPlayers={normalizedPlayers}
       picksLockAtIso={picksLockAtIso}
+      isOwner={isOwner}
+      resultsReady={resultsReady}
+      ownerUsername={ownerProfile?.username ?? null}
     />
   );
 }
