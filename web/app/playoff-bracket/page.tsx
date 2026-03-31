@@ -105,9 +105,9 @@ export default function PlayoffBracketPage() {
       setLoading(true);
       setError(null);
 
-      const { data: auth } = await supabase.auth.getUser();
-      const user = auth?.user;
-      if (!user) return router.push("/login");
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return; // middleware handles redirect
       setUid(user.id);
 
       const { data: prof } = await supabase

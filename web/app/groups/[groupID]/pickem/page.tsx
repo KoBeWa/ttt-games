@@ -130,12 +130,9 @@ export default function PickemPage() {
       setLoading(true);
       setError(null);
 
-      const { data: auth } = await supabase.auth.getUser();
-      const user = auth?.user;
-      if (!user) {
-        router.push("/login");
-        return;
-      }
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return; // middleware handles redirect
       setUid(user.id);
 
       // Profile check -> wenn kein username, onboarding

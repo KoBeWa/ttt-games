@@ -58,13 +58,13 @@ export default function AppHome() {
 
   useEffect(() => {
     (async () => {
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth?.user) return router.push("/login");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return; // middleware handles redirect
 
       const { data: prof } = await supabase
         .from("profiles")
         .select("username")
-        .eq("user_id", auth.user.id)
+        .eq("user_id", session.user.id)
         .maybeSingle();
 
       if (!prof?.username) return router.push("/onboarding");

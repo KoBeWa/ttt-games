@@ -253,9 +253,9 @@ export default function SurvivorPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data: auth } = await supabase.auth.getUser();
-      const user = auth?.user;
-      if (!user) { router.push("/login"); return; }
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return; // middleware handles redirect
       setUid(user.id);
 
       const { data: prof } = await supabase
