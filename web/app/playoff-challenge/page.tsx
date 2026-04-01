@@ -379,7 +379,7 @@ export default function PlayoffChallengePage() {
         /* ── Round score bar ── */
         .pc-round-bar {
           margin: 12px; background: var(--pc-navy-lt);
-          border: 1px solid rgba(11,58,117,.12); border-radius: 12px;
+          border: 1px solid rgba(201,168,76,.2); border-radius: 12px;
           padding: 12px 14px; display: flex; align-items: center; gap: 12px;
         }
         .pc-round-bar-title { font-size: 12px; font-weight: 700; color: var(--pc-navy-tx); }
@@ -396,13 +396,13 @@ export default function PlayoffChallengePage() {
         /* ── Join banner ── */
         .pc-join {
           margin: 16px 12px; background: var(--pc-navy-lt);
-          border: 1px solid rgba(11,58,117,.15); border-radius: 14px;
+          border: 1px solid rgba(201,168,76,.2); border-radius: 14px;
           padding: 24px; text-align: center;
         }
         .pc-join-title { font-size: 20px; font-weight: 700; color: var(--pc-navy-tx); margin-bottom: 8px; }
         .pc-join-sub   { font-size: 13px; color: var(--pc-text3); margin-bottom: 16px; line-height: 1.6; max-width: 360px; margin-left: auto; margin-right: auto; }
         .pc-btn-primary {
-          background: var(--pc-navy); color: #fff;
+          background: var(--pc-navy); color: #111;
           border: none; border-radius: 10px; padding: 11px 28px;
           font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
           transition: opacity .15s;
@@ -572,7 +572,7 @@ export default function PlayoffChallengePage() {
           transition: background .12s;
         }
         .pc-lb-row:hover { background: var(--pc-surface2); }
-        .pc-lb-row.me { background: var(--pc-navy-lt); border: 1px solid rgba(11,58,117,.12); }
+        .pc-lb-row.me { background: var(--pc-navy-lt); border: 1px solid rgba(201,168,76,.2); }
         .pc-lb-rank { width: 22px; text-align: center; flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--pc-text3); font-family: monospace; }
         .pc-lb-rank.top3 { color: var(--pc-amber); }
         .pc-lb-name { flex: 1; font-size: 13px; font-weight: 600; color: var(--pc-text1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

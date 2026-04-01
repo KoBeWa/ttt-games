@@ -485,14 +485,14 @@ export default function SurvivorPage() {
         .sv-join {
           margin: 16px 12px;
           background: var(--sv-navy-lt);
-          border: 1px solid rgba(11,58,117,.15);
+          border: 1px solid rgba(201,168,76,.2);
           border-radius: 14px; padding: 20px;
           text-align: center;
         }
         .sv-join-title { font-size: 18px; font-weight: 700; color: var(--sv-navy-tx); margin-bottom: 6px; }
         .sv-join-sub   { font-size: 13px; color: var(--sv-text3); margin-bottom: 14px; }
         .sv-btn-primary {
-          background: var(--sv-navy); color: #fff;
+          background: var(--sv-navy); color: #111;
           border: none; border-radius: 10px; padding: 10px 24px;
           font-size: 14px; font-weight: 700; cursor: pointer;
           font-family: inherit; transition: opacity .15s;
@@ -658,7 +658,7 @@ export default function SurvivorPage() {
         .sv-lb-row:hover { background: var(--sv-surface2); }
         .sv-lb-row.me {
           background: var(--sv-navy-lt);
-          border: 1px solid rgba(11,58,117,.12);
+          border: 1px solid rgba(201,168,76,.2);
         }
         .sv-lb-row.dead { opacity: .55; }
 
