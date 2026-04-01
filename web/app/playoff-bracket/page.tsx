@@ -423,16 +423,21 @@ export default function PlayoffBracketPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.container}>
-        <div className={styles.topbar}>
-          <div className={styles.titleGroup}>
-            <h1 className={styles.title}>NFL Playoff Bracket</h1>
-            <p className={styles.sub}>
-              Divisional / Conference / Super Bowl füllen sich dynamisch aus deinen Picks.
-            </p>
-          </div>
+      {/* Dark header */}
+      <div className={styles.header}>
+        <div className={styles.headerInner}>
           <Link href="/app" className={styles.backLink}>← Dashboard</Link>
+          <div className={styles.topbar}>
+            <div className={styles.titleGroup}>
+              <h1 className={styles.title}>NFL Playoff Bracket</h1>
+              <p className={styles.sub}>
+                Divisional / Conference / Super Bowl füllen sich dynamisch aus deinen Picks.
+              </p>
+            </div>
+          </div>
         </div>
+      </div>
+      <div className={styles.container}>
 
         {wildcardLockAt && (
           <p className={isBracketLocked ? styles.locked : styles.unlocked}>

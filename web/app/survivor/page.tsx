@@ -353,9 +353,9 @@ export default function SurvivorPage() {
           --sv-text1:    #111110;
           --sv-text2:    #44433f;
           --sv-text3:    #888780;
-          --sv-navy:     #0b3a75;
-          --sv-navy-lt:  #e3effd;
-          --sv-navy-tx:  #0d47a1;
+          --sv-navy:     #c9a84c;
+          --sv-navy-lt:  rgba(201,168,76,0.12);
+          --sv-navy-tx:  #a07a28;
           --sv-green:    #1b5e20;
           --sv-green-lt: #e8f5e9;
           --sv-red:      #b71c1c;
@@ -379,9 +379,9 @@ export default function SurvivorPage() {
             --sv-text1:    #ecedf0;
             --sv-text2:    #9aa3b8;
             --sv-text3:    #606880;
-            --sv-navy:     #2255a8;
-            --sv-navy-lt:  #1a2b4a;
-            --sv-navy-tx:  #90b8f0;
+            --sv-navy:     #c9a84c;
+            --sv-navy-lt:  rgba(201,168,76,0.15);
+            --sv-navy-tx:  #e4c46a;
             --sv-green:    #7ec88a;
             --sv-green-lt: #1a2d1e;
             --sv-red:      #f48fb1;
@@ -394,17 +394,17 @@ export default function SurvivorPage() {
         /* ── Nav ── */
         .sv-nav {
           position: sticky; top: 0; z-index: 50;
-          background: var(--sv-surface);
-          border-bottom: 1px solid var(--sv-border);
+          background: #1c1c1e;
+          border-bottom: 1px solid rgba(201,168,76,0.2);
           padding: 10px 20px;
           display: flex; align-items: center; justify-content: space-between; gap: 12px;
         }
         .sv-nav-left { display: flex; align-items: center; gap: 10px; }
-        .sv-back { font-size: 13px; color: var(--sv-text3); text-decoration: none; transition: color .15s; }
-        .sv-back:hover { color: var(--sv-text1); }
-        .sv-divider { width: 1px; height: 20px; background: var(--sv-border); }
-        .sv-nav-title { font-size: 17px; font-weight: 700; color: var(--sv-text1); }
-        .sv-nav-sub   { font-size: 11px; color: var(--sv-text3); margin-top: 1px; }
+        .sv-back { font-size: 13px; color: #6b5a30; text-decoration: none; transition: color .15s; }
+        .sv-back:hover { color: #c9a84c; }
+        .sv-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.1); }
+        .sv-nav-title { font-size: 17px; font-weight: 700; color: #f0ede4; }
+        .sv-nav-sub   { font-size: 11px; color: #8a7a5a; margin-top: 1px; }
 
         /* Stat pills */
         .sv-pills { display: flex; gap: 6px; }
@@ -416,7 +416,7 @@ export default function SurvivorPage() {
         .sv-pill-val { font-size: 14px; font-weight: 700; color: var(--sv-text1); line-height: 1; }
         .sv-pill-lbl { font-size: 9px; color: var(--sv-text3); letter-spacing: .5px; margin-top: 2px; text-transform: uppercase; }
         .sv-pill-alive .sv-pill-val { color: var(--sv-green); }
-        .sv-pill-rank .sv-pill-val  { color: var(--sv-navy-tx); }
+        .sv-pill-rank .sv-pill-val  { color: #c9a84c; }
 
         /* ── Error ── */
         .sv-error {

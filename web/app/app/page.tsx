@@ -1,10 +1,10 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+import { createServerReadClient } from "@/lib/supabase/server";
 import styles from "./dashboard.module.css";
+
+export const metadata: Metadata = { title: "Dashboard · TTT Games" };
 
 const GAMES = [
   {
@@ -51,28 +51,21 @@ const GAMES = [
   },
 ];
 
-export default function AppHome() {
-  const supabase = createSupabaseBrowserClient();
-  const router = useRouter();
-  const [username, setUsername] = useState<string>("");
+export default async function AppHome() {
+  const supabase = await createServerReadClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  useEffect(() => {
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return; // middleware handles redirect
+  const { data: prof } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("user_id", user.id)
+    .maybeSingle();
 
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
+  if (!prof?.username) redirect("/onboarding");
 
-      if (!prof?.username) return router.push("/onboarding");
-      setUsername(prof.username);
-    })();
-  }, [router, supabase]);
-
-  const initial = username ? username[0].toUpperCase() : "?";
+  const username = prof.username;
+  const initial = username[0].toUpperCase();
 
   return (
     <div className={styles.page}>
@@ -83,12 +76,12 @@ export default function AppHome() {
         </div>
         <div className={styles.userBadge}>
           <div className={styles.avatar}>{initial}</div>
-          <span>{username || "…"}</span>
+          <span>{username}</span>
         </div>
       </header>
 
       <div className={styles.container}>
-        <h1 className={styles.greeting}>Hallo, {username || "…"} 👋</h1>
+        <h1 className={styles.greeting}>Hallo, {username} 👋</h1>
         <p className={styles.greetingSub}>Wähle ein Spiel und leg los.</p>
 
         <p className={styles.sectionTitle}>Spiele</p>
