@@ -175,9 +175,9 @@ export default function PlayoffChallengePage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data: auth } = await supabase.auth.getUser();
-      const user = auth?.user;
-      if (!user) { router.push("/login"); return; }
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return; // middleware handles redirect
       setUid(user.id);
 
       const { data: prof } = await supabase.from("profiles").select("username").eq("user_id", user.id).maybeSingle();
@@ -280,16 +280,16 @@ export default function PlayoffChallengePage() {
           --pc-text1:    #111827;
           --pc-text2:    #374151;
           --pc-text3:    #6b7280;
-          --pc-navy:     #111827;
-          --pc-navy-lt:  #eff6ff;
-          --pc-navy-tx:  #2563eb;
+          --pc-navy:     #c9a84c;
+          --pc-navy-lt:  rgba(201,168,76,0.1);
+          --pc-navy-tx:  #a07a28;
           --pc-green:    #166534;
           --pc-green-lt: #f0fdf4;
           --pc-red:      #b91c1c;
           --pc-red-lt:   #fef2f2;
           --pc-amber:    #c2410c;
           --pc-amber-lt: #fff7ed;
-          --pc-gold:     #f59e0b;
+          --pc-gold:     #c9a84c;
           background: var(--pc-bg);
           color: var(--pc-text1);
           min-height: 100vh;
@@ -298,24 +298,24 @@ export default function PlayoffChallengePage() {
         /* ── Nav ── */
         .pc-nav {
           position: sticky; top: 0; z-index: 50;
-          background: #111827; border-bottom: 1px solid rgba(255,255,255,0.08);
+          background: #1c1c1e; border-bottom: 1px solid rgba(201,168,76,0.2);
           padding: 10px 20px;
           display: flex; align-items: center; justify-content: space-between; gap: 12px;
         }
         .pc-nav-left { display: flex; align-items: center; gap: 10px; }
-        .pc-back { font-size: 13px; color: rgba(255,255,255,0.5); text-decoration: none; transition: color .15s; }
-        .pc-back:hover { color: #fff; }
-        .pc-nav-title { font-size: 17px; font-weight: 700; color: #fff; }
-        .pc-nav-sub   { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 1px; }
+        .pc-back { font-size: 13px; color: #6b5a30; text-decoration: none; transition: color .15s; }
+        .pc-back:hover { color: #c9a84c; }
+        .pc-nav-title { font-size: 17px; font-weight: 700; color: #f0ede4; }
+        .pc-nav-sub   { font-size: 11px; color: #8a7a5a; margin-top: 1px; }
         .pc-pills { display: flex; gap: 6px; }
         .pc-pill {
           display: flex; flex-direction: column; align-items: center;
-          background: rgba(255,255,255,0.1); border-radius: 10px;
+          background: rgba(201,168,76,0.12); border-radius: 10px;
           padding: 4px 11px; min-width: 44px;
         }
-        .pc-pill-val { font-size: 14px; font-weight: 700; color: #fff; line-height: 1; font-family: monospace; }
-        .pc-pill-lbl { font-size: 9px; color: rgba(255,255,255,0.5); letter-spacing: .5px; margin-top: 2px; text-transform: uppercase; }
-        .pc-pill.rank .pc-pill-val { color: #93c5fd; }
+        .pc-pill-val { font-size: 14px; font-weight: 700; color: #f0ede4; line-height: 1; font-family: monospace; }
+        .pc-pill-lbl { font-size: 9px; color: #8a7a5a; letter-spacing: .5px; margin-top: 2px; text-transform: uppercase; }
+        .pc-pill.rank .pc-pill-val { color: #c9a84c; }
 
         /* ── Error ── */
         .pc-error {
@@ -379,7 +379,7 @@ export default function PlayoffChallengePage() {
         /* ── Round score bar ── */
         .pc-round-bar {
           margin: 12px; background: var(--pc-navy-lt);
-          border: 1px solid rgba(11,58,117,.12); border-radius: 12px;
+          border: 1px solid rgba(201,168,76,.2); border-radius: 12px;
           padding: 12px 14px; display: flex; align-items: center; gap: 12px;
         }
         .pc-round-bar-title { font-size: 12px; font-weight: 700; color: var(--pc-navy-tx); }
@@ -396,13 +396,13 @@ export default function PlayoffChallengePage() {
         /* ── Join banner ── */
         .pc-join {
           margin: 16px 12px; background: var(--pc-navy-lt);
-          border: 1px solid rgba(11,58,117,.15); border-radius: 14px;
+          border: 1px solid rgba(201,168,76,.2); border-radius: 14px;
           padding: 24px; text-align: center;
         }
         .pc-join-title { font-size: 20px; font-weight: 700; color: var(--pc-navy-tx); margin-bottom: 8px; }
         .pc-join-sub   { font-size: 13px; color: var(--pc-text3); margin-bottom: 16px; line-height: 1.6; max-width: 360px; margin-left: auto; margin-right: auto; }
         .pc-btn-primary {
-          background: var(--pc-navy); color: #fff;
+          background: var(--pc-navy); color: #111;
           border: none; border-radius: 10px; padding: 11px 28px;
           font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
           transition: opacity .15s;
@@ -572,7 +572,7 @@ export default function PlayoffChallengePage() {
           transition: background .12s;
         }
         .pc-lb-row:hover { background: var(--pc-surface2); }
-        .pc-lb-row.me { background: var(--pc-navy-lt); border: 1px solid rgba(11,58,117,.12); }
+        .pc-lb-row.me { background: var(--pc-navy-lt); border: 1px solid rgba(201,168,76,.2); }
         .pc-lb-rank { width: 22px; text-align: center; flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--pc-text3); font-family: monospace; }
         .pc-lb-rank.top3 { color: var(--pc-amber); }
         .pc-lb-name { flex: 1; font-size: 13px; font-weight: 600; color: var(--pc-text1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

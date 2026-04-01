@@ -167,9 +167,9 @@ export default function PickemPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data: auth } = await supabase.auth.getUser();
-      const user = auth?.user;
-      if (!user) { router.push("/login"); return; }
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return; // middleware handles redirect
       setUid(user.id);
       const { data: prof, error: profErr } = await supabase
         .from("profiles").select("username").eq("user_id", user.id).maybeSingle();

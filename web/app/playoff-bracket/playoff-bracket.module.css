@@ -4,6 +4,17 @@
   color: #111827;
 }
 
+.header {
+  background: #1c1c1e;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+  padding: 20px 24px 24px;
+}
+
+.headerInner {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
 .container {
   max-width: 1180px;
   margin: 0 auto;
@@ -15,7 +26,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 0;
   flex-wrap: wrap;
 }
 
@@ -29,27 +40,26 @@
   font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.02em;
+  color: #f0ede4;
 }
 
 .sub {
-  color: #6b7280;
+  color: #8a7a5a;
   font-size: 13px;
 }
 
 .backLink {
-  font-size: 13px;
-  font-weight: 700;
-  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b5a30;
   text-decoration: none;
-  padding: 8px 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
   white-space: nowrap;
+  display: block;
+  margin-bottom: 16px;
 }
 
 .backLink:hover {
-  background: #f9fafb;
-  color: #111827;
+  color: #c9a84c;
 }
 
 /* Status banners */
@@ -264,8 +274,8 @@
 }
 
 .teamPicked {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: #c9a84c;
+  background: rgba(201,168,76,0.08);
 }
 
 .teamWin {
